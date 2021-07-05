@@ -3,6 +3,7 @@
 //
 
 #include <memory>
+#include <csignal>
 
 #include <TimerManager.h>
 #include <Server.h>
