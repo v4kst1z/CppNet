@@ -20,36 +20,36 @@ class TimerManager;
 class Timer {
  public:
   Timer(unsigned long long timeout, std::function<void()> callback, bool once = true) :
-	  time_out_(timeout),
-	  callback_(std::move(callback)),
-	  once_(once) {
-	expire_ = GetCurrentMillisecs() + timeout;
+      time_out_(timeout),
+      callback_(std::move(callback)),
+      once_(once) {
+    expire_ = GetCurrentMillisecs() + timeout;
   }
 
   unsigned long long GetExpire() {
-	return expire_;
+    return expire_;
   }
 
   unsigned long long GetTimeOut() {
-	return time_out_;
+    return time_out_;
   }
 
   unsigned long long GetCurrentMillisecs() {
-	struct timespec t;
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
   }
 
   std::function<void()> GetCallBack() {
-	return callback_;
+    return callback_;
   }
 
   bool GetOnceFlag() {
-	return once_;
+    return once_;
   }
 
   void Run() {
-	callback_();
+    callback_();
   }
  private:
   std::function<void()> callback_;
@@ -82,9 +82,9 @@ class TimerManager {
   unsigned long long GetCurrentMillisecs();
 
   struct cmp {
-	bool operator()(const TimerPtr &lhs, const TimerPtr &rhs) {
-	  return lhs->GetExpire() > rhs->GetExpire();
-	}
+    bool operator()(const TimerPtr &lhs, const TimerPtr &rhs) {
+      return lhs->GetExpire() > rhs->GetExpire();
+    }
   };
 
   bool quit_;

@@ -18,8 +18,6 @@ class Epoller {
 
   explicit Epoller(int time_out = 5000, int events_num = 4096);
 
-  ~Epoller();
-
   void AddEvent(std::shared_ptr<VariantEventBase>);
   void ModEvent(std::shared_ptr<VariantEventBase>);
   void DelEvent(std::shared_ptr<VariantEventBase>);
@@ -27,6 +25,8 @@ class Epoller {
   std::shared_ptr<VariantEventBase> GetEventPtr(int);
 
   std::vector<std::shared_ptr<VariantEventBase>> PollWait();
+
+  ~Epoller();
 
   DISALLOW_COPY_AND_ASSIGN(Epoller);
  private:

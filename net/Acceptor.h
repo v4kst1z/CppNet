@@ -25,6 +25,7 @@ class Acceptor {
     sockets::SetReuseAddr(accept_fd_);
     sockets::SetReusePort(accept_fd_);
     sockets::Bind(accept_fd_, listen_addr_);
+
     accept_event_.SetReadCallback(std::bind(&Acceptor::HandelNewConnection, this));
   }
 

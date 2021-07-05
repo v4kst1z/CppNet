@@ -16,7 +16,7 @@ extern "C" {
 #include <Logger.h>
 
 TimerManager::TimerManager() :
-	quit_(false) {
+    quit_(false) {
   Start();
 }
 
@@ -25,14 +25,14 @@ void TimerManager::AddTimer(int timeout, std::function<void()> fun) {
   std::unique_lock<std::mutex> lck(mut_);
   std::shared_ptr<Timer> timer = std::make_shared<Timer>(timeout, fun);
   for (auto &elem : fd_timer_flag_) {
-	if (elem.second) {
-	  if (fd_to_timer_[elem.first]->GetExpire() > timer->GetExpire()) {
-		ResetTimerFd(timer, elem.first);
-		timer_queue_.push(fd_to_timer_[elem.first]);
-		fd_to_timer_[elem.first] = timer;
-		return;
-	  }
-	}
+    if (elem.second) {
+      if (fd_to_timer_[elem.first]->GetExpire() > timer->GetExpire()) {
+        ResetTimerFd(timer, elem.first);
+        timer_queue_.push(fd_to_timer_[elem.first]);
+        fd_to_timer_[elem.first] = timer;
+        return;
+      }
+    }
   }
   timer_queue_.push(timer);
   con_.notify_one();
@@ -56,7 +56,7 @@ void TimerManager::ResetTimerFd(std::shared_ptr<Timer> timer, int timer_fd_) {
 }
 
 void TimerManager::GetTimeSpec(struct timespec *ts, unsigned long long millisec) {
-  ts->tv_sec = (time_t)(millisec / 1000);
+  ts->tv_sec = (time_t) (millisec / 1000);
   ts->tv_nsec = (millisec % 1000) * 1000000;
 }
 
@@ -69,17 +69,17 @@ void TimerManager::HandelTimeout(int fd) {
 
   std::unique_lock<std::mutex> lck(mut_);
   if (fd_to_timer_[fd]) {
-	fd_to_timer_[fd]->Run();
-	fd_timer_flag_[fd] = false;
-	fd_to_timer_.erase(fd);
+    fd_to_timer_[fd]->Run();
+    fd_timer_flag_[fd] = false;
+    fd_to_timer_.erase(fd);
   }
 
   unsigned long long now = GetCurrentMillisecs();
   while (!timer_queue_.empty() && timer_queue_.top()->GetExpire() < now) {
-	timer_queue_.top()->Run();
-	if (!timer_queue_.top()->GetOnceFlag())
-	  AddTimer(timer_queue_.top()->GetTimeOut(), timer_queue_.top()->GetCallBack());
-	timer_queue_.pop();
+    timer_queue_.top()->Run();
+    if (!timer_queue_.top()->GetOnceFlag())
+      AddTimer(timer_queue_.top()->GetTimeOut(), timer_queue_.top()->GetCallBack());
+    timer_queue_.pop();
   }
 
   con_.notify_one();
@@ -95,35 +95,35 @@ void TimerManager::Start() {
 
 void TimerManager::Loop() {
   while (!quit_) {
-	std::unique_lock<std::mutex> lck(mut_);
-	con_.wait(lck, [this]() {
-	  return !timer_queue_.empty() &&
-		  fd_timer_flag_.end() != std::find_if(
-			  fd_timer_flag_.begin(),
-			  fd_timer_flag_.end(),
-			  [](const map_value_type &mp) {
-				return mp.second == false;
-			  }
-		  );
-	});
+    std::unique_lock<std::mutex> lck(mut_);
+    con_.wait(lck, [this]() {
+      return !timer_queue_.empty() &&
+          fd_timer_flag_.end() != std::find_if(
+              fd_timer_flag_.begin(),
+              fd_timer_flag_.end(),
+              [](const map_value_type &mp) {
+                return mp.second == false;
+              }
+          );
+    });
 
-	for (auto &mp : fd_timer_flag_) {
-	  if (mp.second == false) {
-		if (!timer_queue_.empty()) {
-		  ResetTimerFd(timer_queue_.top(), mp.first);
-		  mp.second = true;
-		  fd_to_timer_.insert({mp.first, timer_queue_.top()});
-		  timer_queue_.pop();
-		}
-	  }
-	}
+    for (auto &mp : fd_timer_flag_) {
+      if (mp.second == false) {
+        if (!timer_queue_.empty()) {
+          ResetTimerFd(timer_queue_.top(), mp.first);
+          mp.second = true;
+          fd_to_timer_.insert({mp.first, timer_queue_.top()});
+          timer_queue_.pop();
+        }
+      }
+    }
   }
 }
 
 void TimerManager::Stop() {
   quit_ = true;
   if (time_manager_thread_.joinable())
-	time_manager_thread_.join();
+    time_manager_thread_.join();
 }
 
 unsigned long long TimerManager::GetCurrentMillisecs() {

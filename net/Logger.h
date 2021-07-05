@@ -38,17 +38,17 @@ class Logger {
 
   struct LogStream {
    public:
-	LogStream(Level level, Logger *log);
+    LogStream(Level level, Logger *log);
 
-	LogStream(LogStream &&rlog) noexcept;
+    LogStream(LogStream &&rlog) noexcept;
 
-	void AppendLog(const std::string &log, bool terminal = false);
+    void AppendLog(const std::string &log, bool terminal = false);
 
-	~LogStream();
+    ~LogStream();
 
-	std::ostringstream stream_;
-	Level level_;
-	Logger *log_;
+    std::ostringstream stream_;
+    Level level_;
+    Logger *log_;
   };
 
   LogStream operator()(const char *file_name, int line, const char *func_name, Level level);
@@ -66,13 +66,13 @@ class Logger {
   Logger();
 
   const std::string GetCurrentLogLevel(Level level) const {
-	switch (level) {
-	  case Level::DEBUG : return "[DEBUG]\t";
-	  case Level::ERROR: return "[ERROR]\t";
-	  case Level::INFO: return "[INFO]\t";
-	  case Level::FATAL: return "[FATAL]\t";
-	  case Level::WARN: return "[WARN]\t";
-	}
+    switch (level) {
+      case Level::DEBUG : return "[DEBUG]\t";
+      case Level::ERROR: return "[ERROR]\t";
+      case Level::INFO: return "[INFO]\t";
+      case Level::FATAL: return "[FATAL]\t";
+      case Level::WARN: return "[WARN]\t";
+    }
   }
 
   const std::string GetCurrentDateTime();

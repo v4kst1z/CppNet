@@ -24,7 +24,7 @@ struct function_traits;
 
 template<typename T>
 struct function_traits
-	: public function_traits<decltype(&T::operator())> {
+    : public function_traits<decltype(&T::operator())> {
 };
 
 template<typename CT, typename R, typename ...Args>
@@ -37,7 +37,7 @@ struct function_traits<R(CT::*)(Args...) const> {
   template<size_t i>
   struct arg {
    public:
-	typedef typename std::tuple_element<i, std::tuple<Args...>>::type type;
+    typedef typename std::tuple_element<i, std::tuple<Args...>>::type type;
   };
 };
 
@@ -51,7 +51,7 @@ struct function_traits<R(Args...) const> {
   template<size_t i>
   struct arg {
    public:
-	typedef typename std::tuple_element<i, std::tuple<Args...>>::type type;
+    typedef typename std::tuple_element<i, std::tuple<Args...>>::type type;
   };
 };
 
@@ -61,24 +61,24 @@ struct VariantHelper;
 template<typename F, typename ...R>
 struct VariantHelper<F, R...> {
   static void Destory(const std::type_index type_id, void *data) {
-	if (type_id == std::type_index(typeid(F)))
-	  reinterpret_cast<F *>(data)->~F();
-	else
-	  VariantHelper<R...>::Destory(type_id, data);
+    if (type_id == std::type_index(typeid(F)))
+      reinterpret_cast<F *>(data)->~F();
+    else
+      VariantHelper<R...>::Destory(type_id, data);
   }
 
   static void Move(const std::type_index old_type_id, void *old_addr, void *new_addr) {
-	if (old_type_id == std::type_index(typeid(F)))
-	  new(new_addr) F(std::move(*reinterpret_cast<F *>(old_addr)));
-	else
-	  VariantHelper<R...>::Move(old_type_id, old_addr, new_addr);
+    if (old_type_id == std::type_index(typeid(F)))
+      new(new_addr) F(std::move(*reinterpret_cast<F *>(old_addr)));
+    else
+      VariantHelper<R...>::Move(old_type_id, old_addr, new_addr);
   }
 
   static void Copy(const std::type_index old_type_id, void *old_addr, void *new_addr) {
-	if (old_type_id == std::type_index(typeid(F)))
-	  new(new_addr) F(*reinterpret_cast<F *>(old_addr));
-	else
-	  VariantHelper<R...>::Copy(old_type_id, old_addr, new_addr);
+    if (old_type_id == std::type_index(typeid(F)))
+      new(new_addr) F(*reinterpret_cast<F *>(old_addr));
+    else
+      VariantHelper<R...>::Copy(old_type_id, old_addr, new_addr);
   }
 };
 
@@ -95,82 +95,82 @@ class Variant {
   Variant() : mem_type_id_(typeid(void)) {}
 
   Variant(Variant<T...> &v) : mem_type_id_(v.mem_type_id_) {
-	VariantHelper<T...>::Copy(v.mem_type_id_, &v.data_, &data_);
+    VariantHelper<T...>::Copy(v.mem_type_id_, &v.data_, &data_);
   }
 
   Variant(Variant<T...> &&v) : mem_type_id_(v.mem_type_id_) {
-	VariantHelper<T...>::Move(v.mem_type_id_, &v.data_, &data_);
+    VariantHelper<T...>::Move(v.mem_type_id_, &v.data_, &data_);
   }
 
   Variant &operator=(const Variant<T...> &v) {
-	mem_type_id_ = v.mem_type_id_;
-	VariantHelper<T...>::Copy(v.mem_type_id_, &v.data_, &data_);
-	return *this;
+    mem_type_id_ = v.mem_type_id_;
+    VariantHelper<T...>::Copy(v.mem_type_id_, &v.data_, &data_);
+    return *this;
   }
 
   template<typename V,
-	  typename = typename std::enable_if<TypeExist<typename std::remove_reference<V>::type, T...>::value>::type>
+      typename = typename std::enable_if<TypeExist<typename std::remove_reference<V>::type, T...>::value>::type>
   Variant(V &&value) : mem_type_id_(typeid(void)) {
-	if (mem_type_id_ != std::type_index(typeid(void)))
-	  VariantHelper<T...>::Destory(mem_type_id_, &data_);
-	using U = typename std::remove_reference<V>::type;
-	new(&data_) U(std::forward<V>(value));
-	mem_type_id_ = std::type_index(typeid(V));
+    if (mem_type_id_ != std::type_index(typeid(void)))
+      VariantHelper<T...>::Destory(mem_type_id_, &data_);
+    using U = typename std::remove_reference<V>::type;
+    new(&data_) U(std::forward<V>(value));
+    mem_type_id_ = std::type_index(typeid(V));
   }
 
   ~Variant() {
-	VariantHelper<T...>::Destory(mem_type_id_, &data_);
+    VariantHelper<T...>::Destory(mem_type_id_, &data_);
   }
 
   template<typename V,
-	  typename = typename std::enable_if<TypeExist<typename std::remove_reference<V>::type, T...>::value>::type>
+      typename = typename std::enable_if<TypeExist<typename std::remove_reference<V>::type, T...>::value>::type>
   void Set(V &&value) {
-	if (mem_type_id_ != std::type_index(typeid(void)))
-	  VariantHelper<T...>::Destory(mem_type_id_, &data_);
-	using U = typename std::remove_reference<V>::type;
-	new(&data_) U(std::forward<V>(value));
-	mem_type_id_ = std::type_index(typeid(V));
+    if (mem_type_id_ != std::type_index(typeid(void)))
+      VariantHelper<T...>::Destory(mem_type_id_, &data_);
+    using U = typename std::remove_reference<V>::type;
+    new(&data_) U(std::forward<V>(value));
+    mem_type_id_ = std::type_index(typeid(V));
   }
 
   template<typename V>
   bool Is() const {
-	return mem_type_id_ == std::type_index(typeid(typename std::remove_reference<V>::type));
+    return mem_type_id_ == std::type_index(typeid(typename std::remove_reference<V>::type));
   }
 
   template<typename V>
   V &Get() {
-	if (Is<V>())
-	  return *reinterpret_cast<typename std::remove_reference<V>::type *>(&data_);
-	else
-	  throw std::bad_cast();
+    if (Is<V>())
+      return *reinterpret_cast<typename std::remove_reference<V>::type *>(&data_);
+    else
+      throw std::bad_cast();
   }
 
   template<typename F>
   void Visit(F &&f) {
 #ifdef __clang__
-	using V = typename function_traits<F>::template arg<0>::type;
+    using V = typename function_traits<F>::template arg<0>::type;
 #elif _MSC_VER
-	using V = typename function_traits<F>::arg<0>::type;
+    using V = typename function_traits<F>::arg<0>::type;
 #endif
-	if (Is<V>())
-	  f(Get<V>());
+    if (Is<V>())
+      f(Get<V>());
   }
 
   template<typename F, typename... R>
   void Visit(F &&f, R &&... rest) {
 #ifdef __clang__
-	using V = typename function_traits<F>::template arg<0>::type;
+    using V = typename function_traits<F>::template arg<0>::type;
 #elif _MSC_VER
-	using V = typename function_traits<F>::arg<0>::type;
+    using V = typename function_traits<F>::arg<0>::type;
 #endif
-	if (Is<V>())
-	  Visit(std::forward<F>(f));
-	else
-	  Visit(std::forward<R>(rest)...);
+    if (Is<V>())
+      Visit(std::forward<F>(f));
+    else
+      Visit(std::forward<R>(rest)...);
   }
 
   bool IsValid() const {
-	return mem_type_id_ != std::type_index(typeid(void));
+    return mem_type_id_ != std::type_index(typeid(void));
   }
 
  private:

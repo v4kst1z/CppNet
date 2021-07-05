@@ -37,7 +37,7 @@ class Server {
   TcpConnection::CallBack send_data_callback_;
   TcpConnection::CallBack close_callback_;
   TcpConnection::CallBack error_callback_;
-  Logger& log_;
+  Logger &log_;
 };
 
 #endif //CPPNET_SERVER_H

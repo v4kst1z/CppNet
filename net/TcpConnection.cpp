@@ -10,11 +10,11 @@
 #include <Logger.h>
 
 TcpConnection::TcpConnection(int conn_fd, Looper *looper, std::shared_ptr<Ipv4Addr> addr) :
-	conn_fd_(conn_fd),
-	looper_(looper),
-	perr_addr_(addr),
-	half_close_(false),
-	conn_event_(EventBase<Event>(conn_fd)) {
+    conn_fd_(conn_fd),
+    looper_(looper),
+    perr_addr_(addr),
+    half_close_(false),
+    conn_event_(EventBase<Event>(conn_fd)) {
   conn_event_.SetReadCallback(std::bind(&TcpConnection::OnRead, this));
   conn_event_.SetWriteCallback(std::bind(&TcpConnection::OnWrite, this));
   conn_event_.SetCloseCallback(std::bind(&TcpConnection::OnClose, this));
@@ -43,27 +43,27 @@ void TcpConnection::SetErrorCallBack(const TcpConnection::CallBack &cb) {
 
 void TcpConnection::RunNewConnCallBack() {
   if (new_conn_callback_)
-	new_conn_callback_(shared_from_this());
+    new_conn_callback_(shared_from_this());
 }
 
 void TcpConnection::RunMessageCallBack() {
   if (message_callback_)
-	message_callback_(shared_from_this(), &input_buffer_);
+    message_callback_(shared_from_this(), &input_buffer_);
 }
 
 void TcpConnection::RunCloseCallBack() {
   if (close_callback_)
-	close_callback_(shared_from_this());
+    close_callback_(shared_from_this());
 }
 
 void TcpConnection::RunSendDataCallBack() {
   if (send_data_callback_)
-	send_data_callback_(shared_from_this());
+    send_data_callback_(shared_from_this());
 }
 
 void TcpConnection::RunErrorCallBack() {
   if (error_callback_)
-	error_callback_(shared_from_this());
+    error_callback_(shared_from_this());
 }
 
 const std::shared_ptr<Ipv4Addr> TcpConnection::GetPeerAddr() const {
@@ -78,25 +78,25 @@ void TcpConnection::OnRead() {
   char buf[BUFSIZ];
   int len = 0;
   while (true) {
-	len = read(GetConnFd(), buf, BUFSIZ);
-	if (len > 0) {
-	  input_buffer_.AppendData(buf, len);
-	} else if (len < 0) {
-	  if (errno == EAGAIN) // 缓冲区为空
-		break;
-	  else if (errno == EINTR) //中断信号
-		continue;
-	  else if (errno == ECONNRESET) { // 客户端已经close，如果继续读会 Connection reset by peer
-		RunErrorCallBack();
-		break;
-	  } else {
-		ERROR << "read error callback " << errno;
-		break;
-	  }
-	} else {
-	  OnClose();
-	  return;
-	}
+    len = read(GetConnFd(), buf, BUFSIZ);
+    if (len > 0) {
+      input_buffer_.AppendData(buf, len);
+    } else if (len < 0) {
+      if (errno == EAGAIN) // 缓冲区为空
+        break;
+      else if (errno == EINTR) //中断信号
+        continue;
+      else if (errno == ECONNRESET) { // 客户端已经close，如果继续读会 Connection reset by peer
+        RunErrorCallBack();
+        break;
+      } else {
+        ERROR << "read error callback " << errno;
+        break;
+      }
+    } else {
+      OnClose();
+      return;
+    }
   }
   RunMessageCallBack();
 }
@@ -107,11 +107,11 @@ void TcpConnection::OnWrite() {
 
 void TcpConnection::OnClose() {
   if (input_buffer_.GetReadAbleSize() || output_buffer.GetReadAbleSize()) {
-	if (input_buffer_.GetReadAbleSize())
-	  message_callback_(shared_from_this(), &input_buffer_);
+    if (input_buffer_.GetReadAbleSize())
+      message_callback_(shared_from_this(), &input_buffer_);
 
-	while (output_buffer.GetReadAbleSize())
-	  SendData(output_buffer);
+    while (output_buffer.GetReadAbleSize())
+      SendData(output_buffer);
   }
   RunCloseCallBack();
 
@@ -124,64 +124,64 @@ void TcpConnection::SendData(const void *data, size_t len) {
   int send_data_len = 0;
 
   if (output_buffer.GetReadAblePtr() != data && output_buffer.GetReadAbleSize()) {
-	output_buffer.AppendData(static_cast<const char *>(data), len);
-	looper_->GetEventPtr(conn_fd_)->Visit(
-		[](EventBase<Event> &conn_event_) {
-		  conn_event_.EnableWriteEvents(true);
-		});
+    output_buffer.AppendData(static_cast<const char *>(data), len);
+    looper_->GetEventPtr(conn_fd_)->Visit(
+        [](EventBase<Event> &conn_event_) {
+          conn_event_.EnableWriteEvents(true);
+        });
 
-	looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
-	return;
+    looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
+    return;
   }
 
   while (true) {
-	int write_len = write(conn_fd_, (const char *)data + send_data_len, len - send_data_len);
-	if (write_len > 0) {
-	  send_data_len += write_len;
-	  if (len == send_data_len) {
-		//发送完成
-		std::shared_ptr<VariantEventBase> fd = looper_->GetEventPtr(conn_fd_);
-		fd->Visit(
-			[](EventBase<Event> &conn_event) {
-			  conn_event.EnableWriteEvents(false);
-			});
+    int write_len = write(conn_fd_, (const char *) data + send_data_len, len - send_data_len);
+    if (write_len > 0) {
+      send_data_len += write_len;
+      if (len == send_data_len) {
+        //发送完成
+        std::shared_ptr<VariantEventBase> fd = looper_->GetEventPtr(conn_fd_);
+        fd->Visit(
+            [](EventBase<Event> &conn_event) {
+              conn_event.EnableWriteEvents(false);
+            });
 
-		looper_->ModEvent(fd);
-		RunSendDataCallBack();
-		output_buffer.ResetId();
-		break;
-	  };
-	} else if (write_len < 0) {
-	  if (errno == EAGAIN) { // 没有数据可读
-		output_buffer.AppendData((const char *)data + send_data_len, len - send_data_len);
-		looper_->GetEventPtr(conn_fd_)->Visit(
-			[](EventBase<Event> &conn_event_) {
-			  conn_event_.EnableWriteEvents(true);
-			});
+        looper_->ModEvent(fd);
+        RunSendDataCallBack();
+        output_buffer.ResetId();
+        break;
+      };
+    } else if (write_len < 0) {
+      if (errno == EAGAIN) { // 没有数据可读
+        output_buffer.AppendData((const char *) data + send_data_len, len - send_data_len);
+        looper_->GetEventPtr(conn_fd_)->Visit(
+            [](EventBase<Event> &conn_event_) {
+              conn_event_.EnableWriteEvents(true);
+            });
 
-		looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
-		break;
-	  } else if (errno == EINTR) { // 操作被中断
-		continue;
-	  } else if (errno == EPIPE) {
-		//客户端已经close，如果继续写会 EPIPE
-		RunErrorCallBack();
-		break;
-	  } else {
-		ERROR << "write error callback " << errno;
-	  }
-	} else {
-	  OnClose();
-	  break;
-	}
+        looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
+        break;
+      } else if (errno == EINTR) { // 操作被中断
+        continue;
+      } else if (errno == EPIPE) {
+        //客户端已经close，如果继续写会 EPIPE
+        RunErrorCallBack();
+        break;
+      } else {
+        ERROR << "write error callback " << errno;
+      }
+    } else {
+      OnClose();
+      break;
+    }
   }
 }
 
 void TcpConnection::SendData(const std::string &message) {
   if (output_buffer.GetReadAbleSize()) {
-	output_buffer.AppendData(static_cast<const char *>(message.data()), message.size());
-	SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
-	return;
+    output_buffer.AppendData(static_cast<const char *>(message.data()), message.size());
+    SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
+    return;
   }
   SendData(message.data(), message.size());
 }

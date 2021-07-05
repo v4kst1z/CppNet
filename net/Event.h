@@ -33,23 +33,23 @@ class EventBase {
   using EventCallback = std::function<void()>;
 
   explicit EventBase(int fd) :
-	  fd_(fd),
-	  events_(0),
-	  revents_(0) {}
+      fd_(fd),
+      events_(0),
+      revents_(0) {}
 
   void EnableReadEvents(bool flag) {
-	if (flag)
-	  events_ |= EPOLLIN | EPOLLPRI | EPOLLET;
-	else
-	  events_ |= ~(EPOLLIN | EPOLLPRI | EPOLLET);
+    if (flag)
+      events_ |= EPOLLIN | EPOLLPRI | EPOLLET;
+    else
+      events_ |= ~(EPOLLIN | EPOLLPRI | EPOLLET);
   }
 
   void SetReadCallback(EventCallback &&cb) {
-	read_cb_ = cb;
+    read_cb_ = cb;
   }
 
   void HandleEvent() {
-	static_cast<T *>(this)->HandleEvent();
+    static_cast<T *>(this)->HandleEvent();
   }
 
   int GetFd() { return fd_; }
@@ -72,39 +72,39 @@ class EventBase<T, true> {
   using EventCallback = std::function<void()>;
 
   explicit EventBase(int fd) :
-	  fd_(fd),
-	  events_(0),
-	  revents_(0) {}
+      fd_(fd),
+      events_(0),
+      revents_(0) {}
 
   void EnableReadEvents(bool flag) {
-	if (flag)
-	  events_ |= EPOLLIN | EPOLLPRI | EPOLLET;
-	else
-	  events_ &= ~(EPOLLIN | EPOLLPRI | EPOLLET);
+    if (flag)
+      events_ |= EPOLLIN | EPOLLPRI | EPOLLET;
+    else
+      events_ &= ~(EPOLLIN | EPOLLPRI | EPOLLET);
   }
 
   void SetReadCallback(EventCallback &&cb) {
-	read_cb_ = cb;
+    read_cb_ = cb;
   }
 
   void EnableWriteEvents(bool flag) {
-	static_cast<T *>(this)->EnableWriteEvents(flag);
+    static_cast<T *>(this)->EnableWriteEvents(flag);
   }
 
   void SetCloseCallback(EventCallback &&cb) {
-	static_cast<T *>(this)->SetCloseCallback(std::forward<EventCallback>(cb));
+    static_cast<T *>(this)->SetCloseCallback(std::forward<EventCallback>(cb));
   }
 
   void SetWriteCallback(EventCallback &&cb) {
-	static_cast<T *>(this)->SetWriteCallback(std::forward<EventCallback>(cb));
+    static_cast<T *>(this)->SetWriteCallback(std::forward<EventCallback>(cb));
   }
 
   void SetErrorCallback(EventCallback &&cb) {
-	static_cast<T *>(this)->SetErrorCallback(std::forward<EventCallback>(cb));
+    static_cast<T *>(this)->SetErrorCallback(std::forward<EventCallback>(cb));
   }
 
   void HandleEvent() {
-	static_cast<T *>(this)->HandleEvent();
+    static_cast<T *>(this)->HandleEvent();
   }
 
   int GetFd() { return fd_; }
@@ -126,10 +126,10 @@ using VariantEventBase = Variant<EventBase<TimeEvent>, EventBase<Event>>;
 class TimeEvent : public EventBase<TimeEvent> {
  public:
   explicit TimeEvent(int fd) :
-	  EventBase(fd) {}
+      EventBase(fd) {}
 
   void HandleEvent() {
-	read_cb_();
+    read_cb_();
   }
 
   ~TimeEvent() {}
@@ -140,37 +140,37 @@ class Event : public EventBase<Event> {
   explicit Event(int fd) : EventBase(fd) {}
 
   void EnableWriteEvents(bool flag) {
-	if (flag)
-	  events_ |= EPOLLOUT;
-	else
-	  events_ &= ~EPOLLOUT;
+    if (flag)
+      events_ |= EPOLLOUT;
+    else
+      events_ &= ~EPOLLOUT;
   }
 
   void SetWriteCallback(EventCallback &&cb) {
-	write_cb_ = cb;
+    write_cb_ = cb;
   }
 
   void SetErrorCallback(EventCallback &&cb) {
-	error_cb_ = cb;
+    error_cb_ = cb;
   }
 
   void SetCloseCallback(EventCallback &&cb) {
-	close_cb_ = cb;
+    close_cb_ = cb;
   }
 
   void HandleEvent() {
-	if (((events_ & EPSEVERR) || (events_ & EPCLICLO)) && close_cb_) {
-	  close_cb_();
-	  return;
-	}
-	if ((events_ & EPERROR) && error_cb_) {
-	  error_cb_();
-	  return;
-	}
-	if ((events_ & EPREAD) && read_cb_)
-	  read_cb_();
-	if ((events_ & EPWRITE) && write_cb_)
-	  write_cb_();
+    if (((events_ & EPSEVERR) || (events_ & EPCLICLO)) && close_cb_) {
+      close_cb_();
+      return;
+    }
+    if ((events_ & EPERROR) && error_cb_) {
+      error_cb_();
+      return;
+    }
+    if ((events_ & EPREAD) && read_cb_)
+      read_cb_();
+    if ((events_ & EPWRITE) && write_cb_)
+      write_cb_();
   }
 
   ~Event() {}
