@@ -8,43 +8,8 @@ project ("CppNet")
 set (CMAKE_CXX_STANDARD 11)
 
 set (CMAKE_CXX_COMPILER "clang++")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 set(CMAKE_BUILD_TYPE Debug)
-set(SOURCE_FILES main.cpp)
 
-
-find_package (Threads)
-include_directories(base)
-include_directories(net)
-
-# 将源代码添加到此项目的可执行文件。
-add_executable (CppNet 
-        "test.cpp"
-        "base/ThreadPoolBase.h"
-        "base/Common.h"
-        "base/PriorityQueue.h"
-        "base/Socket.h"
-        "base/Ipv4Addr.h"
-        "base/Variant.h"
-        "base/SafeQueue.h"
-
-        "net/Logger.h"
-        "net/Logger.cpp"
-        "net/Event.h"
-        "net/Epoller.h"
-        "net/Epoller.cpp"
-        "net/TimerManager.h"
-        "net/TimerManager.cpp"
-        "net/Looper.h"
-        "net/Looper.cpp"
-        "net/Acceptor.h"
-        "net/IOBuffer.cpp"
-        "net/IOBuffer.h"
-        "net/TcpConnection.cpp"
-        "net/TcpConnection.h"
-        "net/Server.cpp"
-        "net/Server.h"
-        )
-target_link_libraries (CppNet ${CMAKE_THREAD_LIBS_INIT})
+add_subdirectory(example)
 
 # TODO: 如有需要，请添加测试并安装目标。

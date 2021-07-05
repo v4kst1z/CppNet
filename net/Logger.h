@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <thread>
+#include <fstream>
 
 #include <Common.h>
 #include <SafeQueue.h>
@@ -57,13 +58,13 @@ class Logger {
 
   void Loop();
 
-  void SetQuit(bool quit);
+  void Stop();
 
-  ~Logger() = default;
+  ~Logger();
 
   DISALLOW_COPY_AND_ASSIGN(Logger);
  private:
-  Logger();
+  explicit Logger(std::string file_name = "log.txt");
 
   const std::string GetCurrentLogLevel(Level level) const {
     switch (level) {
@@ -81,6 +82,8 @@ class Logger {
   std::unique_ptr<SafeQueue<Message>> queue_data_;
   std::thread log_thread_;
   bool terminal_;
+  std::ofstream stream_;
+  std::string file_name_;
 
   friend class LogStream;
 };

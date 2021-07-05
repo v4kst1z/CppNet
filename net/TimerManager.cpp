@@ -131,3 +131,7 @@ unsigned long long TimerManager::GetCurrentMillisecs() {
   clock_gettime(CLOCK_MONOTONIC, &t);
   return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
 }
+
+TimerManager::~TimerManager() {
+  Stop();
+}

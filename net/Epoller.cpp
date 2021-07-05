@@ -72,7 +72,8 @@ std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
   if (count < 0)
     ERROR << "error epoll_wait";
   std::vector<std::shared_ptr<VariantEventBase>> ret_events;
-  DEBUG << "epoll_wait count is " << count;
+  if (count)
+    DEBUG << "epoll_wait count is " << count;
   for (int id = 0; id < count; id++) {
     std::shared_ptr<VariantEventBase> eventbase = fd_to_events_[(events_ + id * sizeof(epoll_event))->data.fd];
     eventbase->Visit(

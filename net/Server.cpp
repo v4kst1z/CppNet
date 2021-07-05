@@ -15,6 +15,7 @@ Server::Server(int io_threads_num, int timer_num, unsigned short port) :
     timer_manager_(std::make_shared<TimerManager>()),
     main_thread_(new Looper(server_addr_, false)),
     log_(Logger::GetInstance()) {
+  signal(SIGPIPE, SIG_IGN);
   for (int id = 0; id < timer_num; id++) {
     io_threads_.push_back(new Looper(timer_manager_, server_addr_));
   }
@@ -67,5 +68,21 @@ void Server::LoopStart() {
 
 void Server::AddTimer(int timeout, std::function<void()> fun) {
   timer_manager_->AddTimer(timeout, fun);
+}
+
+void Server::Exit() {
+  for (auto &io: io_threads_)
+    io->Stop();
+  for (auto &io: io_threads_)
+    delete io;
+  delete main_thread_;
+  delete server_addr_;
+
+  timer_manager_->Stop();
+  log_.Stop();
+}
+
+Server::~Server() {
+  Exit();
 }
 

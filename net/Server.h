@@ -24,6 +24,10 @@ class Server {
 
   void LoopStart();
 
+  void Exit();
+
+  ~Server();
+
   DISALLOW_COPY_AND_ASSIGN(Server);
  private:
   unsigned short server_port_;

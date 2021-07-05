@@ -24,19 +24,24 @@ void Logger::Loop() {
   while (true) {
     if (quit_ && queue_data_->Empty()) break;
     std::unique_ptr<Message> data = queue_data_->WaitPop();
+    stream_ << data->GetData() << std::endl;
     if (!data->GetTerminal())
       std::cout << data->GetData() << std::endl;
   }
 }
 
-void Logger::SetQuit(bool quit) {
-  quit_ = quit;
+void Logger::Stop() {
+  quit_ = true;
+  if (log_thread_.joinable())
+    log_thread_.join();
 }
 
-Logger::Logger() :
+Logger::Logger(std::string file_name) :
     quit_(false),
     queue_data_(new SafeQueue<Message>()),
-    terminal_(false) {}
+    terminal_(false),
+    file_name_(file_name),
+    stream_(file_name, std::ios::out | std::ios::app) {}
 
 const std::string Logger::GetCurrentDateTime() {
   time_t now = time(NULL);
@@ -44,6 +49,10 @@ const std::string Logger::GetCurrentDateTime() {
   char buf[80];
   strftime(buf, sizeof(buf), "%Y-%m-%d.%X\t", tm_s);
   return buf;
+}
+
+Logger::~Logger() {
+  stream_.close();
 }
 
 Message::Message(const std::string &data, bool terminal) :

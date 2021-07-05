@@ -76,6 +76,7 @@ class TimerManager {
   void Loop();
   void Stop();
 
+  ~TimerManager();
   DISALLOW_COPY_AND_ASSIGN(TimerManager);
  private:
 
