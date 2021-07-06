@@ -8,6 +8,7 @@
 #include <Looper.h>
 #include <Socket.h>
 #include <Logger.h>
+#include <IOBuffer.h>
 
 TcpConnection::TcpConnection(int conn_fd, Looper *looper, std::shared_ptr<Ipv4Addr> addr) :
     conn_fd_(conn_fd),
@@ -48,7 +49,7 @@ void TcpConnection::RunNewConnCallBack() {
 
 void TcpConnection::RunMessageCallBack() {
   if (message_callback_)
-    message_callback_(shared_from_this(), &input_buffer_);
+    message_callback_(shared_from_this(), input_buffer_);
 }
 
 void TcpConnection::RunCloseCallBack() {
@@ -102,16 +103,16 @@ void TcpConnection::OnRead() {
 }
 
 void TcpConnection::OnWrite() {
-  SendData(output_buffer);
+  SendData(&output_buffer);
 }
 
 void TcpConnection::OnClose() {
   if (input_buffer_.GetReadAbleSize() || output_buffer.GetReadAbleSize()) {
     if (input_buffer_.GetReadAbleSize())
-      message_callback_(shared_from_this(), &input_buffer_);
+      message_callback_(shared_from_this(), input_buffer_);
 
     while (output_buffer.GetReadAbleSize())
-      SendData(output_buffer);
+      SendData(&output_buffer);
   }
   RunCloseCallBack();
 
@@ -121,6 +122,14 @@ void TcpConnection::OnClose() {
 }
 
 void TcpConnection::SendData(const void *data, size_t len) {
+  if (looper_->GetThreadId() != std::this_thread::get_id()) {
+    looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(const void *, size_t)>(&TcpConnection::SendData),
+                               shared_from_this(),
+                               data,
+                               len));
+    return;
+  }
+
   int send_data_len = 0;
 
   if (output_buffer.GetReadAblePtr() != data && output_buffer.GetReadAbleSize()) {
@@ -178,6 +187,13 @@ void TcpConnection::SendData(const void *data, size_t len) {
 }
 
 void TcpConnection::SendData(const std::string &message) {
+  if (looper_->GetThreadId() != std::this_thread::get_id()) {
+    looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(const std::string &)>(&TcpConnection::SendData),
+                               shared_from_this(),
+                               message));
+    return;
+  }
+
   if (output_buffer.GetReadAbleSize()) {
     output_buffer.AppendData(static_cast<const char *>(message.data()), message.size());
     SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
@@ -186,8 +202,15 @@ void TcpConnection::SendData(const std::string &message) {
   SendData(message.data(), message.size());
 }
 
-void TcpConnection::SendData(IOBuffer &buffer) {
-  SendData(buffer.GetReadAblePtr(), buffer.GetReadAbleSize());
+void TcpConnection::SendData(IOBuffer *buffer) {
+  if (looper_->GetThreadId() != std::this_thread::get_id()) {
+    looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(IOBuffer *)>(&TcpConnection::SendData),
+                               shared_from_this(),
+                               buffer));
+    return;
+  }
+
+  SendData(buffer->GetReadAblePtr(), buffer->GetReadAbleSize());
 }
 
 EventBase<Event> &TcpConnection::GetEvent() {
@@ -196,5 +219,8 @@ EventBase<Event> &TcpConnection::GetEvent() {
 
 TcpConnection::~TcpConnection() {
   sockets::Close(conn_fd_);
+}
+ThreadPool *TcpConnection::GetThreadPoolPtr() {
+  return looper_->GetTPollPtr();
 }
 

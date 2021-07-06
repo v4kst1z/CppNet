@@ -70,7 +70,7 @@ void Epoller::DelEvent(std::shared_ptr<VariantEventBase> event_base) {
 std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
   int count = epoll_wait(epfd_, events_, events_num_, time_out_);
   if (count < 0)
-    ERROR << "error epoll_wait";
+    ERROR << "error epoll_wait " << errno;
   std::vector<std::shared_ptr<VariantEventBase>> ret_events;
   if (count)
     DEBUG << "epoll_wait count is " << count;

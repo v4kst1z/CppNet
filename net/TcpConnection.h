@@ -11,13 +11,14 @@
 #include <Event.h>
 #include <IOBuffer.h>
 
+class ThreadPool;
 class Ipv4Addr;
 class Looper;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
  public:
   using CallBack = std::function<void(const std::shared_ptr<TcpConnection> &)>;
-  using MessageCallBack = std::function<void(const std::shared_ptr<TcpConnection> &, IOBuffer *)>;
+  using MessageCallBack = std::function<void(const std::shared_ptr<TcpConnection> &, IOBuffer &)>;
 
   TcpConnection(int, Looper *, std::shared_ptr<Ipv4Addr>);
 
@@ -37,9 +38,11 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
   void OnWrite();
   void OnClose();
 
+  ThreadPool *GetThreadPoolPtr();
+
   void SendData(const void *data, size_t len);
   void SendData(const std::string &message);
-  void SendData(IOBuffer &buffer);
+  void SendData(IOBuffer *buffer);
 
   int GetConnFd();
   EventBase<Event> &GetEvent();

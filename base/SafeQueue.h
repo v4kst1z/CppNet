@@ -10,6 +10,7 @@
 #include <atomic>
 
 #include <Common.h>
+#include <mutex>
 
 template<typename T>
 class SafeQueue {
@@ -25,9 +26,12 @@ class SafeQueue {
     tail->data_ = std::move(new_value);
     tail->next_ = std::move(new_node);
     tail = tail->next_.get();
-    nums_++;
-    if (nums_ == 1)
-      data_cond_.notify_one();
+    {
+      std::lock_guard<std::mutex> nums_lck(nums_mutex_);
+      nums_++;
+      if (nums_ == 1)
+        data_cond_.notify_one();
+    }
   }
 
   std::unique_ptr<T> WaitPop() {
@@ -35,12 +39,18 @@ class SafeQueue {
     data_cond_.wait(head_lock, [this]() { return nums_ != 0; });
     std::unique_ptr<T> result(std::move(head_->data_));
     head_ = std::move(head_->next_);
-    nums_--;
+    {
+      std::lock_guard<std::mutex> nums_lck(nums_mutex_);
+      nums_--;
+    }
     return result;
   }
 
   bool Empty() const {
-    return nums_ == 0;
+    std::lock(head_mutex_, tail_mutex_);
+    std::lock_guard<std::mutex> headLk(head_mutex_, std::adopt_lock);
+    std::lock_guard<std::mutex> tailLk(tail_mutex_, std::adopt_lock);
+    return head_.get() == tail;
   }
 
   DISALLOW_COPY_AND_ASSIGN(SafeQueue);
@@ -55,7 +65,8 @@ class SafeQueue {
   node *tail;
   mutable std::mutex tail_mutex_;
   std::condition_variable data_cond_;
-  std::atomic<unsigned int> nums_;
+  mutable std::mutex nums_mutex_;
+  unsigned int nums_;
 };
 
 #endif //CPPNET_BASE_SAFEQUEUE_H_

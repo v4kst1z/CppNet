@@ -40,8 +40,9 @@ Logger::Logger(std::string file_name) :
     quit_(false),
     queue_data_(new SafeQueue<Message>()),
     terminal_(false),
-    file_name_(file_name),
-    stream_(file_name, std::ios::out | std::ios::app) {}
+    file_name_(file_name) {
+  stream_.open(file_name, std::ios::out | std::ios::app);
+}
 
 const std::string Logger::GetCurrentDateTime() {
   time_t now = time(NULL);

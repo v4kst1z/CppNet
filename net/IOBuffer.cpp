@@ -9,15 +9,15 @@ IOBuffer::IOBuffer(size_t init_size, int prepend_size) :
     read_idx_(prepend_size),
     write_idx_(prepend_size) {}
 
-size_t IOBuffer::GetReadAbleSize() {
+const size_t IOBuffer::GetReadAbleSize() const {
   return write_idx_ - read_idx_;
 }
 
-size_t IOBuffer::GetWriteAbleSize() {
+const size_t IOBuffer::GetWriteAbleSize() const {
   return buffer_.size() - write_idx_;
 }
 
-size_t IOBuffer::GetPrependSize() {
+const size_t IOBuffer::GetPrependSize() const {
   return read_idx_;
 }
 

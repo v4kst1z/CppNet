@@ -5,23 +5,30 @@
 #include <memory>
 #include <csignal>
 
-#include <TimerManager.h>
 #include <Server.h>
+#include <TimerManager.h>
 #include <Ipv4Addr.h>
 #include <Logger.h>
 
-Server::Server(int io_threads_num, int timer_num, unsigned short port) :
+Server::Server(int io_threads_num, int timer_num, unsigned short port, uint8_t tpool_num) :
     server_port_(port),
     server_addr_(new Ipv4Addr(server_port_)),
     timer_manager_(std::make_shared<TimerManager>()),
     main_thread_(new Looper(server_addr_, false)),
+    tpool_(new ThreadPool(tpool_num)),
     log_(Logger::GetInstance()) {
   signal(SIGPIPE, SIG_IGN);
   for (int id = 0; id < timer_num; id++) {
-    io_threads_.push_back(new Looper(timer_manager_, server_addr_));
+    auto looper = new Looper(timer_manager_, server_addr_);
+    if (tpool_.get())
+      looper->SetTPollPtr(tpool_.get());
+    io_threads_.push_back(looper);
   }
   for (int id = timer_num; id < io_threads_num; id++) {
-    io_threads_.push_back((new Looper(server_addr_)));
+    auto looper = new Looper(server_addr_);
+    if (tpool_.get())
+      looper->SetTPollPtr(tpool_.get());
+    io_threads_.push_back(looper);
   }
   log_.Start();
 }
@@ -85,5 +92,8 @@ void Server::Exit() {
 
 Server::~Server() {
   Exit();
+}
+ThreadPool *Server::GetThreadPoolPtr() {
+  return tpool_.get();
 }
 

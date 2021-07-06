@@ -186,6 +186,14 @@ void Looper::EraseConn(int fd) {
   fd_to_conn_.erase(fd);
 }
 
+void Looper::SetTPollPtr(ThreadPool *tpool) {
+  tpool_ = tpool;
+}
+
+ThreadPool *Looper::GetTPollPtr() {
+  return tpool_;
+}
+
 
 
 

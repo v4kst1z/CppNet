@@ -7,12 +7,13 @@
 
 #include <Looper.h>
 #include <SafeQueue.h>
+#include <ThreadPool.h>
 
 class Logger;
 
 class Server {
  public:
-  explicit Server(int io_threads_num = 8, int timer_num = 3, unsigned short port = 8888);
+  explicit Server(int io_threads_num = 8, int timer_num = 3, unsigned short port = 8888, uint8_t tpool_num = 4);
 
   void SetNewConnCallback(TcpConnection::CallBack &&cb);
   void SetMessageCallBack(TcpConnection::MessageCallBack &&cb);
@@ -21,6 +22,8 @@ class Server {
   void SetErrorCallBack(TcpConnection::CallBack &&cb);
 
   void AddTimer(int timeout, std::function<void()> fun);
+
+  ThreadPool *GetThreadPoolPtr();
 
   void LoopStart();
 
@@ -36,6 +39,7 @@ class Server {
   std::vector<Looper *> io_threads_;
   Looper *main_thread_;
 
+  std::unique_ptr<ThreadPool> tpool_;
   TcpConnection::CallBack new_conn_callback_;
   TcpConnection::MessageCallBack message_callback_;
   TcpConnection::CallBack send_data_callback_;

@@ -12,7 +12,16 @@ void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
 }
 
 void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
-  conn->SendData(buf.GetReadAblePtr(), buf.GetReadAbleSize());
+  auto tp = conn->GetThreadPoolPtr();
+  auto con = conn.get();
+  tp->enqueue([con, buf]() {
+    char buff[BUFSIZ];
+    memcpy(buff, buf.GetReadAblePtr(), buf.GetReadAbleSize());
+    buff[buf.GetReadAbleSize()] = '\x00';
+    for (int id = 0; id < buf.GetReadAbleSize(); id++)
+      buff[id] = toupper(buff[id]);
+    con->SendData(buff, buf.GetReadAbleSize());
+  });
   buf.ResetId();
 }
 

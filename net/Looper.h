@@ -22,6 +22,7 @@ class TimerManager;
 class Epoller;
 class Acceptor;
 class Server;
+class ThreadPool;
 
 class Looper {
  public:
@@ -56,6 +57,9 @@ class Looper {
   void InsertConn(int, std::shared_ptr<TcpConnection>);
   void EraseConn(int);
 
+  void SetTPollPtr(ThreadPool *tpool);
+  ThreadPool *GetTPollPtr();
+
   std::thread::id GetThreadId() const;
 
   ~Looper();
@@ -76,6 +80,7 @@ class Looper {
   std::shared_ptr<TimerManager> timer_manager_;
   std::shared_ptr<VariantEventBase> timer_event_;
   std::unordered_map<int, std::shared_ptr<TcpConnection>> fd_to_conn_;
+  ThreadPool *tpool_;
 
   TcpConnection::CallBack new_conn_callback_;
   TcpConnection::MessageCallBack message_callback_;

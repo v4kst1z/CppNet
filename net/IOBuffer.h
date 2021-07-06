@@ -15,9 +15,9 @@ class IOBuffer {
  public:
   explicit IOBuffer(size_t init_size = 2048, int prepend_size = 8);
 
-  size_t GetReadAbleSize();
-  size_t GetWriteAbleSize();
-  size_t GetPrependSize();
+  const size_t GetReadAbleSize() const;
+  const size_t GetWriteAbleSize() const;
+  const size_t GetPrependSize() const;
 
   const char *GetReadAblePtr() const;
   const char *GetWriteAblePtr() const;
@@ -28,7 +28,9 @@ class IOBuffer {
 
   void ResetId();
 
-  DISALLOW_COPY_AND_ASSIGN(IOBuffer);
+  ~IOBuffer() = default;
+
+  IOBuffer &operator=(const IOBuffer &) = delete;
  private:
   void AllocSpace(size_t len);
 
