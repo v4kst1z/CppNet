@@ -28,7 +28,7 @@ class Looper {
  public:
   using WorkFunction = std::function<void()>;
 
-  explicit Looper(Ipv4Addr *, bool io_thread_flag = true);
+  explicit Looper(Ipv4Addr *);
 
   //至少有一个线程支持 timer 定时器
   Looper(std::shared_ptr<TimerManager>, Ipv4Addr *);
@@ -43,6 +43,8 @@ class Looper {
   void WakeUpLoop();
   void AddTask(WorkFunction task);
   void ExecTask();
+
+  void LoopClient(Ipv4Addr *addr);
 
   void SetAcceptNewConnection();
 
@@ -61,6 +63,9 @@ class Looper {
   ThreadPool *GetTPollPtr();
 
   std::thread::id GetThreadId() const;
+
+  void SetLoopId(std::thread::id loop_id);
+  std::thread::id GetLoopId();
 
   ~Looper();
 

@@ -46,6 +46,8 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 
   int GetConnFd();
   EventBase<Event> &GetEvent();
+  void SetEvent(int);
+
   const std::shared_ptr<Ipv4Addr> GetPeerAddr() const;
 
   ~TcpConnection();

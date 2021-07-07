@@ -14,10 +14,11 @@ Server::Server(int io_threads_num, int timer_num, unsigned short port, uint8_t t
     server_port_(port),
     server_addr_(new Ipv4Addr(server_port_)),
     timer_manager_(std::make_shared<TimerManager>()),
-    main_thread_(new Looper(server_addr_, false)),
+    main_thread_(new Looper(server_addr_)),
     tpool_(new ThreadPool(tpool_num)),
     log_(Logger::GetInstance()) {
   signal(SIGPIPE, SIG_IGN);
+  main_thread_->SetLoopId(std::this_thread::get_id());
   for (int id = 0; id < timer_num; id++) {
     auto looper = new Looper(timer_manager_, server_addr_);
     if (tpool_.get())
@@ -93,6 +94,7 @@ void Server::Exit() {
 Server::~Server() {
   Exit();
 }
+
 ThreadPool *Server::GetThreadPoolPtr() {
   return tpool_.get();
 }

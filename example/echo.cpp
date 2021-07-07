@@ -9,6 +9,7 @@
 void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
   auto peer = conn->GetPeerAddr();
   DEBUG << "client at " << peer->GetIp() << ":" << peer->GetPort();
+  conn->SendData("hello~\n");
 }
 
 void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
@@ -27,10 +28,10 @@ void ErrorCB(const std::shared_ptr<TcpConnection> &conn) {
 }
 
 int main() {
-  Server *server = new Server();
-  server->SetNewConnCallback(NewConnectionCB);
-  server->SetMessageCallBack(MessageCB);
-  server->SetCloseCallBack(CloseCB);
-  server->LoopStart();
+  Server server = Server();
+  server.SetNewConnCallback(NewConnectionCB);
+  server.SetMessageCallBack(MessageCB);
+  server.SetCloseCallBack(CloseCB);
+  server.LoopStart();
   return 0;
 }

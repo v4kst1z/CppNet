@@ -44,6 +44,10 @@ class EventBase {
       events_ |= ~(EPOLLIN | EPOLLPRI | EPOLLET);
   }
 
+  void SetEvent(int event) {
+    events_ |= event;
+  }
+
   void SetReadCallback(EventCallback &&cb) {
     read_cb_ = cb;
   }
@@ -81,6 +85,10 @@ class EventBase<T, true> {
       events_ |= EPOLLIN | EPOLLPRI | EPOLLET;
     else
       events_ &= ~(EPOLLIN | EPOLLPRI | EPOLLET);
+  }
+
+  void SetEvent(int event) {
+    events_ |= event;
   }
 
   void SetReadCallback(EventCallback &&cb) {

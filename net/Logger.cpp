@@ -25,7 +25,7 @@ void Logger::Loop() {
     if (quit_ && queue_data_->Empty()) break;
     std::unique_ptr<Message> data = queue_data_->WaitPop();
     stream_ << data->GetData() << std::endl;
-    if (!data->GetTerminal())
+    if (data->GetTerminal())
       std::cout << data->GetData() << std::endl;
   }
 }

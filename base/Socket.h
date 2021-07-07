@@ -9,6 +9,7 @@ extern "C" {
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <fcntl.h>
 }
 
@@ -92,6 +93,15 @@ inline int Accept(int socket_fd, Ipv4Addr *addr) {
   inet_ntop(AF_INET, &bind_addr->sin_addr.s_addr, ip_str, INET_ADDRSTRLEN);
   addr->SetIp(ip_str);
   return conn_fd;
+}
+
+inline int Connect(int sockfd, Ipv4Addr *addr) {
+  struct sockaddr_in *server_addr = addr->GetAddr();
+  socklen_t addrlen = sizeof(*server_addr);
+  int ret = connect(sockfd, (struct sockaddr *) server_addr, addrlen);
+  if (ret < 0)
+    ERROR << "connect failed!" << errno;
+  return ret;
 }
 
 }

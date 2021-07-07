@@ -36,10 +36,10 @@ void ErrorCB(const std::shared_ptr<TcpConnection> &conn) {
 }
 
 int main() {
-  Server *server = new Server();
-  server->SetNewConnCallback(NewConnectionCB);
-  server->SetMessageCallBack(MessageCB);
-  server->SetCloseCallBack(CloseCB);
-  server->LoopStart();
+  Server server = Server(8, 3, 8888, 4);
+  server.SetNewConnCallback(NewConnectionCB);
+  server.SetMessageCallBack(MessageCB);
+  server.SetCloseCallBack(CloseCB);
+  server.LoopStart();
   return 0;
 }

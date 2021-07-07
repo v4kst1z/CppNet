@@ -79,10 +79,12 @@ void TcpConnection::OnRead() {
   char buf[BUFSIZ];
   int len = 0;
   while (true) {
+    memset(buf, '\x00', BUFSIZ);
     len = read(GetConnFd(), buf, BUFSIZ);
     if (len > 0) {
       input_buffer_.AppendData(buf, len);
     } else if (len < 0) {
+      input_buffer_.AppendData(buf, strlen(buf));
       if (errno == EAGAIN) // 缓冲区为空
         break;
       else if (errno == EINTR) //中断信号
@@ -222,5 +224,10 @@ TcpConnection::~TcpConnection() {
 }
 ThreadPool *TcpConnection::GetThreadPoolPtr() {
   return looper_->GetTPollPtr();
+}
+
+void TcpConnection::SetEvent(int event) {
+  conn_event_.EnableReadEvents(false);
+  conn_event_.SetEvent(event);
 }
 

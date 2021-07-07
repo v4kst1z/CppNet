@@ -25,7 +25,7 @@ int CreateEventFd() {
   return evtfd;
 }
 
-Looper::Looper(Ipv4Addr *addr, bool io_thread_flag) :
+Looper::Looper(Ipv4Addr *addr) :
     quit_(false),
     epoller_(new Epoller()),
     net_addr_(addr),
@@ -117,6 +117,40 @@ void Looper::Loop() {
   }
 }
 
+void Looper::LoopClient(Ipv4Addr *addr) {
+  bool new_conn = false;
+  while (!quit_) {
+    if (!new_conn) {
+      sockets::Connect(fd_to_conn_.begin()->first, addr);
+      std::shared_ptr<VariantEventBase>
+          tmp = std::make_shared<VariantEventBase>(fd_to_conn_.begin()->second->GetEvent());
+      epoller_->AddEvent(tmp);
+    }
+    std::vector<std::shared_ptr<VariantEventBase>> ret = epoller_->PollWait();
+    if (!new_conn && !ret.empty()) {
+      new_conn = true;
+      auto conn = fd_to_conn_.begin()->second;
+      new_conn_callback_(conn);
+
+      conn->SetCloseCallBack(close_callback_);
+      conn->SetErrorCallBack(error_callback_);
+      conn->SetSendDataCallBack(send_data_callback_);
+      conn->SetMessageCallBack(message_callback_);
+      continue;
+    }
+    for (auto &elem : ret) {
+      elem->Visit(
+          [](EventBase<Event> &e) {
+            e.HandleEvent();
+          },
+          [](EventBase<TimeEvent> &e) {
+            e.HandleEvent();
+          }
+      );
+    }
+  }
+}
+
 void Looper::Stop() {
   quit_ = true;
   if (io_thread_.joinable())
@@ -193,6 +227,15 @@ void Looper::SetTPollPtr(ThreadPool *tpool) {
 ThreadPool *Looper::GetTPollPtr() {
   return tpool_;
 }
+
+void Looper::SetLoopId(std::thread::id loop_id) {
+  loop_id_ = loop_id;
+}
+
+std::thread::id Looper::GetLoopId() {
+  return loop_id_;
+}
+
 
 
 

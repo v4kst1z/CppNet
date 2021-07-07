@@ -13,7 +13,7 @@ class Logger;
 
 class Server {
  public:
-  explicit Server(int io_threads_num = 8, int timer_num = 3, unsigned short port = 8888, uint8_t tpool_num = 4);
+  explicit Server(int io_threads_num = 8, int timer_num = 3, unsigned short port = 8888, uint8_t tpool_num = 0);
 
   void SetNewConnCallback(TcpConnection::CallBack &&cb);
   void SetMessageCallBack(TcpConnection::MessageCallBack &&cb);
