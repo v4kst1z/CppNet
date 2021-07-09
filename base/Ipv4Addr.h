@@ -20,6 +20,8 @@ extern "C" {
 
 class Ipv4Addr {
  public:
+  Ipv4Addr() = default;
+
   explicit Ipv4Addr(unsigned short port) :
       port_(port),
       addr_str_("127.0.0.1") {

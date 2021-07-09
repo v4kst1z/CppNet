@@ -9,11 +9,14 @@
 void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
   auto peer = conn->GetPeerAddr();
   DEBUG << "client at " << peer->GetIp() << ":" << peer->GetPort();
-  conn->SendData("hello~\n");
 }
 
 void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
-  conn->SendData(buf.GetReadAblePtr(), buf.GetReadAbleSize());
+  char buff[BUFSIZ];
+  memcpy(buff, buf.GetReadAblePtr(), buf.GetReadAbleSize());
+  buff[buf.GetReadAbleSize()] = '\x00';
+  std::cout << "receive " << buff << std::endl;
+  conn->SendData(buff, buf.GetReadAbleSize());
   buf.ResetId();
 }
 

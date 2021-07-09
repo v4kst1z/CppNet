@@ -2,6 +2,9 @@
 // Created by v4kst1z.
 //
 
+#include <memory>
+
+#include <TimerManager.h>
 #include <Server.h>
 #include <Ipv4Addr.h>
 #include <Logger.h>
@@ -10,7 +13,6 @@
 void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
   auto peer = conn->GetPeerAddr();
   std::cout << "connect to " << peer->GetIp() << ":" << peer->GetPort() << std::endl;
-  conn->SendData("client test");
 }
 
 void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
@@ -22,10 +24,24 @@ void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
 }
 
 int main() {
-  Ipv4Addr addr = Ipv4Addr("127.0.0.1", 8888);
-  Client client = Client(&addr);
+  auto tm = std::make_shared<TimerManager>();
+  Looper l = Looper(tm);
+  auto addr = std::make_shared<Ipv4Addr>("127.0.0.1", 8888);
+  Client client = Client(&l, addr);
   client.SetNewConnCallback(NewConnectionCB);
   client.SetMessageCallBack(MessageCB);
-  client.LoopStart();
+  client.Connect();
+  client.SendData("hello world\n");
+  client.SendData("hello world1\n");
+  l.AddTimer(1000, [&]() {
+    client.SendData("hello world2\n");
+  });
+  l.AddTimer(7000, [&]() {
+    client.SendData("hello world4\n");
+  });
+  l.AddTimer(2000, [&]() {
+    client.SendData("hello world3\n");
+  });
+  l.LoopClient();
   return 0;
 }

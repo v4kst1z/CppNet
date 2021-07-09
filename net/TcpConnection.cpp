@@ -151,13 +151,12 @@ void TcpConnection::SendData(const void *data, size_t len) {
       send_data_len += write_len;
       if (len == send_data_len) {
         //发送完成
-        std::shared_ptr<VariantEventBase> fd = looper_->GetEventPtr(conn_fd_);
-        fd->Visit(
+        looper_->GetEventPtr(conn_fd_)->Visit(
             [](EventBase<Event> &conn_event) {
               conn_event.EnableWriteEvents(false);
             });
 
-        looper_->ModEvent(fd);
+        looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
         RunSendDataCallBack();
         output_buffer.ResetId();
         break;
@@ -222,6 +221,7 @@ EventBase<Event> &TcpConnection::GetEvent() {
 TcpConnection::~TcpConnection() {
   sockets::Close(conn_fd_);
 }
+
 ThreadPool *TcpConnection::GetThreadPoolPtr() {
   return looper_->GetTPollPtr();
 }

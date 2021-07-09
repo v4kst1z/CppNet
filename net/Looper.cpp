@@ -27,6 +27,7 @@ int CreateEventFd() {
 
 Looper::Looper(Ipv4Addr *addr) :
     quit_(false),
+    loop_start_(false),
     epoller_(new Epoller()),
     net_addr_(addr),
     wakeup_fd_(CreateEventFd()) {
@@ -41,6 +42,7 @@ Looper::Looper(Ipv4Addr *addr) :
 
 Looper::Looper(std::shared_ptr<TimerManager> timer_manager, Ipv4Addr *addr) :
     quit_(false),
+    loop_start_(false),
     epoller_(new Epoller()),
     timer_manager_(timer_manager),
     net_addr_(addr),
@@ -93,6 +95,7 @@ void Looper::SetAcceptNewConnection() {
 }
 
 void Looper::Loop() {
+  loop_start_ = true;
   loop_id_ = std::this_thread::get_id();
   accptor_ = make_unique<Acceptor>(net_addr_, this);
   SetAcceptNewConnection();
@@ -117,27 +120,13 @@ void Looper::Loop() {
   }
 }
 
-void Looper::LoopClient(Ipv4Addr *addr) {
-  bool new_conn = false;
-  while (!quit_) {
-    if (!new_conn) {
-      sockets::Connect(fd_to_conn_.begin()->first, addr);
-      std::shared_ptr<VariantEventBase>
-          tmp = std::make_shared<VariantEventBase>(fd_to_conn_.begin()->second->GetEvent());
-      epoller_->AddEvent(tmp);
-    }
-    std::vector<std::shared_ptr<VariantEventBase>> ret = epoller_->PollWait();
-    if (!new_conn && !ret.empty()) {
-      new_conn = true;
-      auto conn = fd_to_conn_.begin()->second;
-      new_conn_callback_(conn);
+void Looper::StartClient() {
+  io_thread_ = std::thread(std::bind(&Looper::LoopClient, this));
+}
 
-      conn->SetCloseCallBack(close_callback_);
-      conn->SetErrorCallBack(error_callback_);
-      conn->SetSendDataCallBack(send_data_callback_);
-      conn->SetMessageCallBack(message_callback_);
-      continue;
-    }
+void Looper::LoopClient() {
+  while (!quit_) {
+    std::vector<std::shared_ptr<VariantEventBase>> ret = epoller_->PollWait();
     for (auto &elem : ret) {
       elem->Visit(
           [](EventBase<Event> &e) {
@@ -148,6 +137,8 @@ void Looper::LoopClient(Ipv4Addr *addr) {
           }
       );
     }
+    if (loop_start_)
+      ExecTask();
   }
 }
 
@@ -195,10 +186,14 @@ void Looper::AddTask(WorkFunction task) {
     std::lock_guard<std::mutex> lck(mtx_);
     task_.push_back(task);
   }
+  if (!loop_start_)
+    return;
   WakeUpLoop();
 }
 
 void Looper::ExecTask() {
+  if (!loop_start_)
+    return;
   std::vector<WorkFunction> tsk;
   {
     std::lock_guard<std::mutex> lck(mtx_);
@@ -236,8 +231,14 @@ std::thread::id Looper::GetLoopId() {
   return loop_id_;
 }
 
+bool Looper::GetLoopStartValue() {
+  return loop_start_;
+}
 
+void Looper::SetLoopStartValue(bool val) {
+  loop_start_ = val;
+}
 
-
-
-
+void Looper::AddTimer(int timeout, std::function<void()> fun) {
+  timer_manager_->AddTimer(timeout, fun);
+}

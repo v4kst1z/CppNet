@@ -10,13 +10,19 @@
 
 class Client {
  public:
-  explicit Client(Ipv4Addr *addr);
+  Client(Looper *looper, std::shared_ptr<Ipv4Addr> addr);
+
+  void Connect();
 
   void SetNewConnCallback(TcpConnection::CallBack &&cb);
   void SetMessageCallBack(TcpConnection::MessageCallBack &&cb);
   void SetCloseCallBack(TcpConnection::CallBack &&cb);
   void SetSendDataCallBack(TcpConnection::CallBack &&cb);
   void SetErrorCallBack(TcpConnection::CallBack &&cb);
+
+  void SendData(const void *data, size_t len);
+  void SendData(const std::string &message);
+  void SendData(IOBuffer *buffer);
 
   void LoopStart();
 
@@ -26,7 +32,7 @@ class Client {
  private:
   bool quit_;
   std::shared_ptr<Ipv4Addr> addr_;
-  std::shared_ptr<Looper> looper_;
+  Looper *looper_;
   Logger &log_;
   int conn_fd_;
   std::shared_ptr<TcpConnection> conn_;

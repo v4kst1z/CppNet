@@ -27,4 +27,3 @@ class PriorityQueue : public std::priority_queue<T, C, Cmp> {
   }
 };
 #endif //CPPNET_PRIORITYQUEUE_H
-

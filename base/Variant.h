@@ -180,4 +180,3 @@ class Variant {
   std::type_index mem_type_id_;
 };
 #endif //CPPNET_VARIANT_H
-

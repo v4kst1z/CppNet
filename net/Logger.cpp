@@ -53,6 +53,7 @@ const std::string Logger::GetCurrentDateTime() {
 }
 
 Logger::~Logger() {
+  Stop();
   stream_.close();
 }
 

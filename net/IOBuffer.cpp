@@ -60,5 +60,3 @@ void IOBuffer::ResetId() {
   read_idx_ = 8;
   write_idx_ = 8;
 }
-
-
