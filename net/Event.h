@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_EVENT_H
-#define CPPNET_EVENT_H
+#ifndef CPPNET_NET_EVENT_H
+#define CPPNET_NET_EVENT_H
 
 extern "C" {
 #include <sys/epoll.h>
@@ -160,4 +160,4 @@ class Event : public EventBase<Event> {
   EventCallback close_cb_;
 };
 
-#endif  // CPPNET_EVENT_H
+#endif  // CPPNET_NET_EVENT_H

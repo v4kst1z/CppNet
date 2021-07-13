@@ -1,5 +1,5 @@
 //
-// Created by v4kst1z.
+// Created by v4kst1z
 //
 
 #ifndef CPPNET_NET_LOGGER_H_

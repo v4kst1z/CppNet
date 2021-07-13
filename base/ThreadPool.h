@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_THREADPOOL_H
-#define CPPNET_THREADPOOL_H
+#ifndef CPPNET_BASE_THREADPOOL_H
+#define CPPNET_BASE_THREADPOOL_H
 
 #include <condition_variable>
 #include <functional>
@@ -108,4 +108,4 @@ inline ThreadPool::~ThreadPool() {
   for (auto &t : thread_pool_) t.join();
 }
 
-#endif  // CPPNET_THREADPOOL_H
+#endif  // CPPNET_BASE_THREADPOOL_H

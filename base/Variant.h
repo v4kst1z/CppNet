@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_VARIANT_H
-#define CPPNET_VARIANT_H
+#ifndef CPPNET_BASE_VARIANT_H
+#define CPPNET_BASE_VARIANT_H
 
 #include <functional>
 #include <type_traits>
@@ -182,4 +182,4 @@ class Variant {
   data_t data_;
   std::type_index mem_type_id_;
 };
-#endif  // CPPNET_VARIANT_H
+#endif  // CPPNET_BASE_VARIANT_H

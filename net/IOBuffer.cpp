@@ -1,5 +1,5 @@
 //
-// Created by v4kst1z.
+// Created by v4kst1z
 //
 
 #include "IOBuffer.h"

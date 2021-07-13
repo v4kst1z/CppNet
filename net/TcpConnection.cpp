@@ -10,7 +10,7 @@
 #include "Looper.h"
 #include "Socket.h"
 
-TcpConnection::TcpConnection(int conn_fd, Looper<TcpConnection> *looper,
+TcpConnection::TcpConnection(int conn_fd, BaseLooper *looper,
                              std::shared_ptr<Ipv4Addr> addr)
     : conn_fd_(conn_fd),
       looper_(looper),

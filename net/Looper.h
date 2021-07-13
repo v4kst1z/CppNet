@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_LOOPER_H
-#define CPPNET_LOOPER_H
+#ifndef CPPNET_NET_LOOPER_H
+#define CPPNET_NET_LOOPER_H
 
 extern "C" {
 #include <fcntl.h>
@@ -34,6 +34,8 @@ class Server;
 class TcpConnection;
 class ThreadPool;
 
+enum class LOOPFLAG { NONE, SERVER, CLIENT, UDPSERVER, UDPCLIENT };
+
 class BaseLooper {
  public:
   using WorkFunction = std::function<void()>;
@@ -61,6 +63,10 @@ class BaseLooper {
   virtual std::thread::id GetThreadId() const { return std::thread::id(); }
 
   virtual void AddTask(WorkFunction task) { return; }
+
+  virtual int GetServerFd() { return 0; }
+
+  virtual void SetServerFd(int) { return; }
 };
 
 template <typename T>
@@ -108,26 +114,41 @@ class Looper final : public BaseLooper {
 
   void AddTimer(int timeout, std::function<void()> fun);
 
-  void SetTcpServer(bool);
+  int GetServerFd() override;
+  void SetServerFd(int fd) override;
 
+  void SetServerFdImpl(int fd);
+
+  void SetLoopFlag(LOOPFLAG flag);
   ~Looper();
 
   DISALLOW_COPY_AND_ASSIGN(Looper);
 
  private:
+  template <typename U = T>
+  typename std::enable_if<std::is_same<U, TcpConnection>::value, void>::type
+  InitServer();
+
+  template <typename U = T>
+  typename std::enable_if<std::is_same<U, UdpConnection>::value, void>::type
+  InitServer();
+
+  void InitUdpServer();
+
   Ipv4Addr *net_addr_;
+  int server_fd_;
 
   int timer_fd_;
   bool quit_;
   bool loop_start_;
   int wakeup_fd_;
-  bool tcp_server_;
+  LOOPFLAG loop_flag;
   std::unique_ptr<Epoller> epoller_;
   std::thread io_thread_;
   std::thread::id loop_id_;
   std::mutex mtx_;
   std::vector<WorkFunction> task_;
-  std::unique_ptr<Acceptor> accptor_;
+  Acceptor *accptor_;
   std::shared_ptr<TimerManager> timer_manager_;
   std::shared_ptr<VariantEventBase> timer_event_;
   std::unordered_map<int, std::shared_ptr<TcpConnection>> fd_to_conn_;
@@ -156,7 +177,7 @@ inline Looper<T>::Looper(Ipv4Addr *addr)
       epoller_(new Epoller()),
       net_addr_(addr),
       wakeup_fd_(CreateEventFd()),
-      tcp_server_(false) {
+      loop_flag(LOOPFLAG::NONE) {
   EventBase<Event> fd = EventBase<Event>(wakeup_fd_);
   fd.EnableReadEvents(true);
   fd.SetReadCallback([this]() {
@@ -175,7 +196,7 @@ inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
       timer_manager_(timer_manager),
       net_addr_(addr),
       wakeup_fd_(CreateEventFd()),
-      tcp_server_(false),
+      loop_flag(LOOPFLAG::NONE),
       timer_fd_(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC)) {
   EventBase<Event> event_fd = EventBase<Event>(wakeup_fd_);
   event_fd.EnableReadEvents(true);
@@ -200,6 +221,11 @@ inline void Looper<T>::AddEvent(std::shared_ptr<VariantEventBase> e) {
 }
 
 template <typename T>
+inline void Looper<T>::SetLoopFlag(LOOPFLAG flag) {
+  loop_flag = flag;
+}
+
+template <typename T>
 inline void Looper<T>::ModEvent(std::shared_ptr<VariantEventBase> e) {
   epoller_->ModEvent(e);
 }
@@ -215,7 +241,12 @@ inline void Looper<T>::Start() {
 }
 
 template <typename T>
-inline void Looper<T>::SetAcceptNewConnection() {
+inline int Looper<T>::GetServerFd() {
+  return server_fd_;
+}
+
+template <typename T>
+void Looper<T>::SetAcceptNewConnection() {
   accptor_->SetNewConnectionCallBack(
       [this](std::shared_ptr<TcpConnection> conn) -> void {
         conn->SetNewConnCallback(new_conn_callback_);
@@ -230,18 +261,71 @@ inline void Looper<T>::SetAcceptNewConnection() {
 }
 
 template <typename T>
+template <typename U>
+typename std::enable_if<std::is_same<U, TcpConnection>::value, void>::type
+Looper<T>::InitServer() {
+  loop_start_ = true;
+  accptor_ = new Acceptor(net_addr_, this);
+  SetAcceptNewConnection();
+  accptor_->Listen();
+
+  std::shared_ptr<VariantEventBase> tmp =
+      std::make_shared<VariantEventBase>(accptor_->GetEvent());
+  epoller_->AddEvent(tmp);
+}
+
+template <typename T>
+template <typename U>
+typename std::enable_if<std::is_same<U, UdpConnection>::value, void>::type
+Looper<T>::InitServer() {
+  loop_start_ = true;
+  server_fd_ = sockets::CreateNonblockAndCloexecUdpSocket();
+  sockets::SetReuseAddr(server_fd_);
+  sockets::SetReusePort(server_fd_);
+  sockets::Bind(server_fd_, net_addr_);
+
+  EventBase<Event> fd = EventBase<Event>(server_fd_);
+  fd.EnableReadEvents(true);
+  fd.SetReadCallback([this]() {
+    std::vector<std::shared_ptr<UdpConnection>> bak;
+    while (true) {
+      int error = 0;
+      auto conn =
+          std::make_shared<UdpConnection>(dynamic_cast<BaseLooper *>(this));
+      bak.push_back(conn);
+      conn->SetMessageCallBack(message_callback_);
+      conn->SetSendDataCallBack(send_data_callback_);
+      int ret = sockets::RecvFrom(server_fd_, conn, error);
+      if (ret < 0) {
+        if (error != EAGAIN) {
+          DEBUG << "RecvFrom Failed, errno num is " << errno;
+        }
+        return;
+      } else if (ret > 0) {
+        conn->RunMessageCallBack();
+      }
+    }
+  });
+  std::shared_ptr<VariantEventBase> tmp =
+      std::make_shared<VariantEventBase>(fd);
+  epoller_->AddEvent(tmp);
+}
+
+template <typename T>
 inline void Looper<T>::Loop() {
   loop_id_ = std::this_thread::get_id();
 
-  if (tcp_server_) {
-    loop_start_ = true;
-    accptor_ = make_unique<Acceptor>(net_addr_, this);
-    SetAcceptNewConnection();
-    accptor_->Listen();
-
-    std::shared_ptr<VariantEventBase> tmp =
-        std::make_shared<VariantEventBase>(accptor_->GetEvent());
-    epoller_->AddEvent(tmp);
+  switch (loop_flag) {
+    case LOOPFLAG::SERVER:
+    case LOOPFLAG::UDPSERVER:
+      InitServer();
+      break;
+    case LOOPFLAG::CLIENT:
+    case LOOPFLAG::UDPCLIENT:
+      break;
+    default:
+      DEBUG << "Please Set loop flag!";
+      break;
   }
 
   while (!quit_) {
@@ -300,6 +384,7 @@ inline void Looper<T>::WakeUpLoop() {
 template <typename T>
 inline Looper<T>::~Looper() {
   Stop();
+  delete accptor_;
 }
 
 template <typename T>
@@ -374,8 +459,8 @@ inline void Looper<T>::AddTimer(int timeout, std::function<void()> fun) {
 }
 
 template <typename T>
-inline void Looper<T>::SetTcpServer(bool val) {
-  tcp_server_ = val;
+void Looper<T>::SetServerFd(int fd) {
+  server_fd_ = fd;
 }
 
-#endif  // CPPNET_LOOPER_H
+#endif  // CPPNET_NET_LOOPER_H

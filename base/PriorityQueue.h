@@ -2,17 +2,14 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_PRIORITYQUEUE_H
-#define CPPNET_PRIORITYQUEUE_H
+#ifndef CPPNET_BASE_PRIORITYQUEUE_H
+#define CPPNET_BASE_PRIORITYQUEUE_H
 
-#include <queue>
 #include <algorithm>
+#include <queue>
 
-template<
-    typename T,
-    class C = std::vector<T>,
-    class Cmp = std::less<typename C::value_type>
->
+template <typename T, class C = std::vector<T>,
+          class Cmp = std::less<typename C::value_type> >
 class PriorityQueue : public std::priority_queue<T, C, Cmp> {
  public:
   bool erase(const T &value) {
@@ -26,4 +23,4 @@ class PriorityQueue : public std::priority_queue<T, C, Cmp> {
     }
   }
 };
-#endif //CPPNET_PRIORITYQUEUE_H
+#endif  // CPPNET_BASE_PRIORITYQUEUE_H

@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_EPOLLER_H
-#define CPPNET_EPOLLER_H
+#ifndef CPPNET_NET_EPOLLER_H
+#define CPPNET_NET_EPOLLER_H
 
 #include <memory>
 #include <unordered_map>
@@ -39,4 +39,4 @@ class Epoller {
   int events_num_;
 };
 
-#endif  // CPPNET_EPOLLER_H
+#endif  // CPPNET_NET_EPOLLER_H

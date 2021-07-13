@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_SOCKET_H
-#define CPPNET_SOCKET_H
+#ifndef CPPNET_BASE_SOCKET_H
+#define CPPNET_BASE_SOCKET_H
 
 extern "C" {
 #include <arpa/inet.h>
@@ -16,6 +16,7 @@ extern "C" {
 #include "Common.h"
 #include "Ipv4Addr.h"
 #include "Logger.h"
+#include "UdpConnection.h"
 
 namespace sockets {
 inline int CreateTcpSocket() {
@@ -34,6 +35,14 @@ inline int CreateUdpSocket() {
 inline int CreateNonblockAndCloexecTcpSocket() {
   int socket_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
                            IPPROTO_TCP);
+  if (socket_fd < 0) ERROR << "create socket failed!";
+  return socket_fd;
+}
+
+inline int CreateNonblockAndCloexecUdpSocket() {
+  int socket_fd =
+      ::socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+  ;
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;
 }
@@ -108,6 +117,31 @@ inline int Connect(int sockfd, Ipv4Addr *addr) {
   return ret;
 }
 
+inline void SendTo(int server_fd, Ipv4Addr *peer, const char *data, int len) {
+  struct sockaddr_in *dst = peer->GetAddr();
+  ssize_t ret = sendto(server_fd, data, len, 0, (const struct sockaddr *)dst,
+                       sizeof(*dst));
+  if (ret < 0) {
+    ERROR << "SendTo failed "
+          << "error num is " << errno;
+  }
+}
+
+inline int RecvFrom(int server_fd, std::shared_ptr<UdpConnection> conn,
+                    int &error) {
+  struct sockaddr_in clinet_addr;
+  socklen_t len = sizeof(clinet_addr);
+  char buf[BUFSIZ];
+  int ret = recvfrom(server_fd, buf, BUFSIZ, 0, (struct sockaddr *)&clinet_addr,
+                     &len);
+  if (ret > 0) {
+    conn->Read(buf, strlen(buf));
+    conn->SetPeerAddr(&clinet_addr);
+  } else if (ret < 0) {
+    error = errno;
+  }
+  return ret;
+}
 }  // namespace sockets
 
-#endif  // CPPNET_SOCKET_H
+#endif  // CPPNET_BASE_SOCKET_H

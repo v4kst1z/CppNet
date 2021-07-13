@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_COMMON_H
-#define CPPNET_COMMON_H
+#ifndef CPPNET_BASE_COMMON_H
+#define CPPNET_BASE_COMMON_H
 
 #include <functional>
 #include <iostream>

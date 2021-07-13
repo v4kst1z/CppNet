@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_SERVER_H
-#define CPPNET_SERVER_H
+#ifndef CPPNET_NET_SERVER_H
+#define CPPNET_NET_SERVER_H
 
 #include "Looper.h"
 #include "SafeQueue.h"
@@ -51,4 +51,4 @@ class Server {
   Logger &log_;
 };
 
-#endif  // CPPNET_SERVER_H
+#endif  // CPPNET_NET_SERVER_H

@@ -1,5 +1,5 @@
 //
-// Created by v4kst1z.
+// Created by v4kst1z
 //
 extern "C" {
 #include <sys/socket.h>
@@ -12,7 +12,6 @@ extern "C" {
 #include "AsyncDns.h"
 #include "Ipv4Addr.h"
 #include "Looper.h"
-#include "Socket.h"
 #include "UdpConnection.h"
 
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
@@ -20,6 +19,7 @@ AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
       looper_(looper),
       log_(Logger::GetInstance()),
       dns_server_addr_(new Ipv4Addr("114.114.114.114", 53)) {
+  looper->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
   CreateDnsQuery(make_unique<DnsMessage>(strlen("www.jd.com"), "www.jd.com"));
 }

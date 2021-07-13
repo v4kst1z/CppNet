@@ -15,7 +15,7 @@ Acceptor::Acceptor(Ipv4Addr *addr, Looper<TcpConnection> *looper)
   sockets::SetReuseAddr(accept_fd_);
   sockets::SetReusePort(accept_fd_);
   sockets::Bind(accept_fd_, listen_addr_);
-
+  looper_->SetServerFd(accept_fd_);
   accept_event_.SetReadCallback(
       std::bind(&Acceptor::HandelNewConnection, this));
 }
@@ -25,7 +25,8 @@ void Acceptor::HandelNewConnection() {
     auto peer_addr = std::make_shared<Ipv4Addr>(0);
     int conn_fd = sockets::Accept(accept_fd_, peer_addr.get());
     if (!conn_fd) break;
-    auto conn = std::make_shared<TcpConnection>(conn_fd, looper_, peer_addr);
+    auto conn = std::make_shared<TcpConnection>(
+        conn_fd, dynamic_cast<BaseLooper *>(looper_), peer_addr);
     looper_->InsertConn(conn_fd, conn);
     if (conn_fd) {
       if (new_conn_cb_)

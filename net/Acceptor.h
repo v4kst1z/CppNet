@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_ACCEPTOR_H
-#define CPPNET_ACCEPTOR_H
+#ifndef CPPNET_NET_ACCEPTOR_H
+#define CPPNET_NET_ACCEPTOR_H
 
 #include <memory>
 
@@ -43,4 +43,4 @@ class Acceptor {
   Ipv4Addr *listen_addr_;
 };
 
-#endif  // CPPNET_ACCEPTOR_H
+#endif  // CPPNET_NET_ACCEPTOR_H

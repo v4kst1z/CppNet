@@ -21,14 +21,15 @@ Server::Server(int io_threads_num, int timer_num, unsigned short port,
       log_(Logger::GetInstance()) {
   signal(SIGPIPE, SIG_IGN);
   main_thread_->SetLoopId(std::this_thread::get_id());
+  if (tpool_->GetThreadNum()) main_thread_->SetTPollPtr(tpool_.get());
   for (int id = 0; id < timer_num; id++) {
     auto looper = new Looper<TcpConnection>(timer_manager_, server_addr_);
-    if (tpool_.get()) looper->SetTPollPtr(tpool_.get());
+    if (tpool_->GetThreadNum()) looper->SetTPollPtr(tpool_.get());
     io_threads_.push_back(looper);
   }
   for (int id = timer_num; id < io_threads_num; id++) {
     auto looper = new Looper<TcpConnection>(server_addr_);
-    if (tpool_.get()) looper->SetTPollPtr(tpool_.get());
+    if (tpool_->GetThreadNum()) looper->SetTPollPtr(tpool_.get());
     io_threads_.push_back(looper);
   }
   log_.Start();
@@ -66,10 +67,10 @@ void Server::SetErrorCallBack(TcpConnection::CallBack &&cb) {
 
 void Server::LoopStart() {
   for (auto &io : io_threads_) {
-    io->SetTcpServer(true);
+    io->SetLoopFlag(LOOPFLAG::SERVER);
     io->Start();
   }
-  main_thread_->SetTcpServer(true);
+  main_thread_->SetLoopFlag(LOOPFLAG::SERVER);
   main_thread_->Loop();
 }
 

@@ -20,20 +20,25 @@ class UdpConnection : public std::enable_shared_from_this<UdpConnection> {
       std::function<void(const std::shared_ptr<UdpConnection> &, IOBuffer &)>;
   using CallBack = std::function<void(const std::shared_ptr<UdpConnection> &)>;
 
-  UdpConnection(BaseLooper *, std::shared_ptr<Ipv4Addr>) {}
+  UdpConnection(BaseLooper *);
 
   void SetMessageCallBack(const MessageCallBack &cb);
+  void SetSendDataCallBack(const CallBack &cb);
+  void SetErrorCallBack(const CallBack &cb);
 
   void RunMessageCallBack();
+  void RunSendDataCallBack();
+  void RunErrorCallBack();
 
-  void OnRead();
-  void OnWrite();
+  void Read(const char *data, size_t len);
+  void Write(const char *data, size_t len);
 
   void SendData(const void *data, size_t len);
   void SendData(const std::string &message);
   void SendData(IOBuffer *buffer);
 
   const std::shared_ptr<Ipv4Addr> GetPeerAddr() const;
+  void SetPeerAddr(struct sockaddr_in *);
 
   ~UdpConnection() = default;
 

@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_IPV4ADDR_H
-#define CPPNET_IPV4ADDR_H
+#ifndef CPPNET_BASE_IPV4ADDR_H
+#define CPPNET_BASE_IPV4ADDR_H
 
 extern "C" {
 #include <arpa/inet.h>
@@ -59,6 +59,15 @@ class Ipv4Addr {
     }
   }
 
+  void SetAddr(struct sockaddr_in *addr) {
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(addr->sin_addr), ip_str, INET_ADDRSTRLEN);
+
+    port_ = ntohs(addr->sin_port);
+    addr_str_ = ip_str;
+    addr_ = *addr;
+  }
+
   struct sockaddr_in *GetAddr() {
     return &addr_;
   }
@@ -89,4 +98,4 @@ class Ipv4Addr {
   struct sockaddr_in addr_ {};
 };
 
-#endif  // CPPNET_IPV4ADDR_H
+#endif  // CPPNET_BASE_IPV4ADDR_H

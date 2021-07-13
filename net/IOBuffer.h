@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_IOBUFFER_H
-#define CPPNET_IOBUFFER_H
+#ifndef CPPNET_NET_IOBUFFER_H
+#define CPPNET_NET_IOBUFFER_H
 
 #include <cstddef>
 #include <string>
@@ -40,4 +40,4 @@ class IOBuffer {
   size_t write_idx_;
 };
 
-#endif  // CPPNET_IOBUFFER_H
+#endif  // CPPNET_NET_IOBUFFER_H

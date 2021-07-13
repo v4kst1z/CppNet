@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_TIMERMANAGER_H
-#define CPPNET_TIMERMANAGER_H
+#ifndef CPPNET_NET_TIMERMANAGER_H
+#define CPPNET_NET_TIMERMANAGER_H
 
 #include <condition_variable>
 #include <functional>
@@ -87,4 +87,4 @@ class TimerManager {
   PriorityQueue<TimerPtr, std::vector<TimerPtr>, cmp> timer_queue_;
 };
 
-#endif  // CPPNET_TIMERMANAGER_H
+#endif  // CPPNET_NET_TIMERMANAGER_H

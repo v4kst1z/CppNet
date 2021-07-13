@@ -2,8 +2,8 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_TCPCONNECTION_H
-#define CPPNET_TCPCONNECTION_H
+#ifndef CPPNET_NET_TCPCONNECTION_H
+#define CPPNET_NET_TCPCONNECTION_H
 
 #include <functional>
 #include <memory>
@@ -11,11 +11,9 @@
 #include "Event.h"
 #include "IOBuffer.h"
 
-template <typename T>
-class Looper;
-
 class ThreadPool;
 class Ipv4Addr;
+class BaseLooper;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
  public:
@@ -23,7 +21,7 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
   using MessageCallBack =
       std::function<void(const std::shared_ptr<TcpConnection> &, IOBuffer &)>;
 
-  TcpConnection(int, Looper<TcpConnection> *, std::shared_ptr<Ipv4Addr>);
+  TcpConnection(int, BaseLooper *, std::shared_ptr<Ipv4Addr>);
 
   void SetNewConnCallback(const CallBack &cb);
   void SetMessageCallBack(const MessageCallBack &cb);
@@ -58,7 +56,7 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
  private:
   int conn_fd_;
   bool half_close_;
-  Looper<TcpConnection> *looper_;
+  BaseLooper *looper_;
   std::shared_ptr<Ipv4Addr> perr_addr_;
   EventBase<Event> conn_event_;
 
@@ -72,4 +70,4 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
   IOBuffer output_buffer;
 };
 
-#endif  // CPPNET_TCPCONNECTION_H
+#endif  // CPPNET_NET_TCPCONNECTION_H
