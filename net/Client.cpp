@@ -2,19 +2,21 @@
 // Created by v4kst1z.
 //
 
+#include "Client.h"
+
 #include <memory>
 
-#include <Client.h>
-#include <Socket.h>
-#include <TcpConnection.h>
+#include "Looper.h"
+#include "Socket.h"
+#include "TcpConnection.h"
 
-Client::Client(Looper *looper, std::shared_ptr<Ipv4Addr> addr) :
-    quit_(false),
-    addr_(addr),
-    looper_(looper),
-    log_(Logger::GetInstance()),
-    conn_fd_(sockets::CreateNonblockAndCloexecTcpSocket()),
-    conn_(std::make_shared<TcpConnection>(conn_fd_, looper_, addr_)) {
+Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr)
+    : quit_(false),
+      addr_(addr),
+      looper_(looper),
+      log_(Logger::GetInstance()),
+      conn_fd_(sockets::CreateNonblockAndCloexecTcpSocket()),
+      conn_(std::make_shared<TcpConnection>(conn_fd_, looper_, addr_)) {
   conn_->GetEvent().EnableWriteEvents(true);
   looper_->InsertConn(conn_fd_, conn_);
   looper_->SetLoopId(std::this_thread::get_id());
@@ -46,57 +48,51 @@ void Client::SetErrorCallBack(TcpConnection::CallBack &&cb) {
   looper_->SetErrorCallBack(error_callback_);
 }
 
-void Client::LoopStart() {
-  looper_->LoopClient();
-}
+void Client::LoopStart() { looper_->Loop(); }
 
 void Client::Connect() {
   sockets::Connect(conn_fd_, addr_.get());
 
-  conn_->SetMessageCallBack([&](const std::shared_ptr<TcpConnection> &conn, IOBuffer &) {
-    conn->SetNewConnCallback(new_conn_callback_);
-    conn->SetCloseCallBack(close_callback_);
-    conn->SetErrorCallBack(error_callback_);
-    conn->SetSendDataCallBack(send_data_callback_);
-    conn->SetMessageCallBack(message_callback_);
+  conn_->SetMessageCallBack(
+      [&](const std::shared_ptr<TcpConnection> &conn, IOBuffer &) {
+        conn->SetNewConnCallback(new_conn_callback_);
+        conn->SetCloseCallBack(close_callback_);
+        conn->SetErrorCallBack(error_callback_);
+        conn->SetSendDataCallBack(send_data_callback_);
+        conn->SetMessageCallBack(message_callback_);
 
-    conn->RunNewConnCallBack();
-    looper_->GetEventPtr(conn->GetConnFd())->Visit(
-        [](EventBase<Event> &conn_event_) {
-          conn_event_.EnableWriteEvents(false);
-        });
+        conn->RunNewConnCallBack();
+        looper_->GetEventPtr(conn->GetConnFd())
+            ->Visit([](EventBase<Event> &conn_event_) {
+              conn_event_.EnableWriteEvents(false);
+            });
 
-    if (!looper_->GetLoopStartValue()) {
-      looper_->SetLoopStartValue(true);
-      looper_->ExecTask();
-    }
-  });
-  std::shared_ptr<VariantEventBase>
-      tmp = std::make_shared<VariantEventBase>(conn_->GetEvent());
+        if (!looper_->GetLoopStartValue()) {
+          looper_->SetLoopStartValue(true);
+          looper_->ExecTask();
+        }
+      });
+  std::shared_ptr<VariantEventBase> tmp =
+      std::make_shared<VariantEventBase>(conn_->GetEvent());
   looper_->AddEvent(tmp);
 }
 
 void Client::SendData(const void *data, size_t len) {
   looper_->AddTask(
-      std::bind(
-          static_cast<void (TcpConnection::*)(const void *, size_t)>(&TcpConnection::SendData),
-          conn_,
-          data,
-          len
-      ));
+      std::bind(static_cast<void (TcpConnection::*)(const void *, size_t)>(
+                    &TcpConnection::SendData),
+                conn_, data, len));
 }
 
 void Client::SendData(const std::string &message) {
   looper_->AddTask(
-      std::bind(
-          static_cast<void (TcpConnection::*)(const std::string &)>(&TcpConnection::SendData),
-          conn_,
-          message));
+      std::bind(static_cast<void (TcpConnection::*)(const std::string &)>(
+                    &TcpConnection::SendData),
+                conn_, message));
 }
 
 void Client::SendData(IOBuffer *buffer) {
-  looper_->AddTask(
-      std::bind(static_cast<void (TcpConnection::*)(IOBuffer *)>(&TcpConnection::SendData),
-                conn_,
-                buffer));
+  looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(IOBuffer *)>(
+                                 &TcpConnection::SendData),
+                             conn_, buffer));
 }

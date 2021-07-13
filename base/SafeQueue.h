@@ -5,20 +5,17 @@
 #ifndef CPPNET_BASE_SAFEQUEUE_H_
 #define CPPNET_BASE_SAFEQUEUE_H_
 
-#include <memory>
-#include <condition_variable>
 #include <atomic>
-
-#include <Common.h>
+#include <condition_variable>
+#include <memory>
 #include <mutex>
 
-template<typename T>
+#include "Common.h"
+
+template <typename T>
 class SafeQueue {
  public:
-  SafeQueue() :
-      head_(new node),
-      tail(head_.get()),
-      nums_(0) {}
+  SafeQueue() : head_(new node), tail(head_.get()), nums_(0) {}
 
   void Push(std::unique_ptr<T> &&new_value) {
     std::unique_ptr<node> new_node(new node);
@@ -29,8 +26,7 @@ class SafeQueue {
     {
       std::lock_guard<std::mutex> nums_lck(nums_mutex_);
       nums_++;
-      if (nums_ == 1)
-        data_cond_.notify_one();
+      if (nums_ == 1) data_cond_.notify_one();
     }
   }
 
@@ -54,6 +50,7 @@ class SafeQueue {
   }
 
   DISALLOW_COPY_AND_ASSIGN(SafeQueue);
+
  private:
   struct node {
     std::unique_ptr<T> data_;
@@ -69,4 +66,4 @@ class SafeQueue {
   unsigned int nums_;
 };
 
-#endif //CPPNET_BASE_SAFEQUEUE_H_
+#endif  // CPPNET_BASE_SAFEQUEUE_H_

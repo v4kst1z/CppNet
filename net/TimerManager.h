@@ -5,34 +5,29 @@
 #ifndef CPPNET_TIMERMANAGER_H
 #define CPPNET_TIMERMANAGER_H
 
-#include <unordered_map>
-#include <thread>
-#include <queue>
-#include <vector>
 #include <condition_variable>
 #include <functional>
+#include <queue>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
-#include <Common.h>
-#include <PriorityQueue.h>
+#include "Common.h"
+#include "PriorityQueue.h"
 
 class TimerManager;
 
 class Timer {
  public:
-  Timer(unsigned long long timeout, std::function<void()> callback, bool once = true) :
-      time_out_(timeout),
-      callback_(std::move(callback)),
-      once_(once) {
+  Timer(unsigned long long timeout, std::function<void()> callback,
+        bool once = true)
+      : time_out_(timeout), callback_(std::move(callback)), once_(once) {
     expire_ = GetCurrentMillisecs() + timeout;
   }
 
-  unsigned long long GetExpire() {
-    return expire_;
-  }
+  unsigned long long GetExpire() { return expire_; }
 
-  unsigned long long GetTimeOut() {
-    return time_out_;
-  }
+  unsigned long long GetTimeOut() { return time_out_; }
 
   unsigned long long GetCurrentMillisecs() {
     struct timespec t;
@@ -40,17 +35,12 @@ class Timer {
     return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
   }
 
-  std::function<void()> GetCallBack() {
-    return callback_;
-  }
+  std::function<void()> GetCallBack() { return callback_; }
 
-  bool GetOnceFlag() {
-    return once_;
-  }
+  bool GetOnceFlag() { return once_; }
 
-  void Run() {
-    callback_();
-  }
+  void Run() { callback_(); }
+
  private:
   std::function<void()> callback_;
   unsigned long long time_out_;
@@ -78,8 +68,8 @@ class TimerManager {
 
   ~TimerManager();
   DISALLOW_COPY_AND_ASSIGN(TimerManager);
- private:
 
+ private:
   unsigned long long GetCurrentMillisecs();
 
   struct cmp {
@@ -97,5 +87,4 @@ class TimerManager {
   PriorityQueue<TimerPtr, std::vector<TimerPtr>, cmp> timer_queue_;
 };
 
-#endif //CPPNET_TIMERMANAGER_H
-
+#endif  // CPPNET_TIMERMANAGER_H

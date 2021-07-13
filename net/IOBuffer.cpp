@@ -2,12 +2,12 @@
 // Created by v4kst1z.
 //
 
-#include <IOBuffer.h>
+#include "IOBuffer.h"
 
-IOBuffer::IOBuffer(size_t init_size, int prepend_size) :
-    buffer_(prepend_size + init_size),
-    read_idx_(prepend_size),
-    write_idx_(prepend_size) {}
+IOBuffer::IOBuffer(size_t init_size, int prepend_size)
+    : buffer_(prepend_size + init_size),
+      read_idx_(prepend_size),
+      write_idx_(prepend_size) {}
 
 const size_t IOBuffer::GetReadAbleSize() const {
   return write_idx_ - read_idx_;
@@ -17,9 +17,7 @@ const size_t IOBuffer::GetWriteAbleSize() const {
   return buffer_.size() - write_idx_;
 }
 
-const size_t IOBuffer::GetPrependSize() const {
-  return read_idx_;
-}
+const size_t IOBuffer::GetPrependSize() const { return read_idx_; }
 
 const char *IOBuffer::GetReadAblePtr() const {
   return &*buffer_.begin() + read_idx_;
@@ -29,16 +27,15 @@ const char *IOBuffer::GetWriteAblePtr() const {
   return &*buffer_.begin() + write_idx_;
 }
 
-char *IOBuffer::GetWriteAblePtr() {
-  return &*buffer_.begin() + write_idx_;
-}
+char *IOBuffer::GetWriteAblePtr() { return &*buffer_.begin() + write_idx_; }
 
 void IOBuffer::AllocSpace(size_t len) {
   if (GetWriteAbleSize() + GetPrependSize() - 8 < len)
     buffer_.resize(write_idx_ + len);
   else {
     size_t read_size = GetReadAbleSize();
-    std::copy(&*buffer_.begin() + read_idx_, &*buffer_.begin() + write_idx_, &*buffer_.begin() + 8);
+    std::copy(&*buffer_.begin() + read_idx_, &*buffer_.begin() + write_idx_,
+              &*buffer_.begin() + 8);
     read_idx_ = 8;
     write_idx_ = read_size + 8;
   }

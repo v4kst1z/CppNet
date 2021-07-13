@@ -5,11 +5,11 @@
 #ifndef CPPNET_IOBUFFER_H
 #define CPPNET_IOBUFFER_H
 
-#include <vector>
 #include <cstddef>
 #include <string>
+#include <vector>
 
-#include <Common.h>
+#include "Common.h"
 
 class IOBuffer {
  public:
@@ -31,6 +31,7 @@ class IOBuffer {
   ~IOBuffer() = default;
 
   IOBuffer &operator=(const IOBuffer &) = delete;
+
  private:
   void AllocSpace(size_t len);
 
@@ -39,4 +40,4 @@ class IOBuffer {
   size_t write_idx_;
 };
 
-#endif //CPPNET_IOBUFFER_H
+#endif  // CPPNET_IOBUFFER_H

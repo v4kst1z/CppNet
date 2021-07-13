@@ -5,15 +5,17 @@
 #ifndef CPPNET_SERVER_H
 #define CPPNET_SERVER_H
 
-#include <Looper.h>
-#include <SafeQueue.h>
-#include <ThreadPool.h>
+#include "Looper.h"
+#include "SafeQueue.h"
+#include "TcpConnection.h"
+#include "ThreadPool.h"
 
 class Logger;
 
 class Server {
  public:
-  explicit Server(int io_threads_num = 8, int timer_num = 3, unsigned short port = 8888, uint8_t tpool_num = 0);
+  explicit Server(int io_threads_num = 8, int timer_num = 3,
+                  unsigned short port = 8888, uint8_t tpool_num = 0);
 
   void SetNewConnCallback(TcpConnection::CallBack &&cb);
   void SetMessageCallBack(TcpConnection::MessageCallBack &&cb);
@@ -32,12 +34,13 @@ class Server {
   ~Server();
 
   DISALLOW_COPY_AND_ASSIGN(Server);
+
  private:
   unsigned short server_port_;
   Ipv4Addr *server_addr_;
   std::shared_ptr<TimerManager> timer_manager_;
-  std::vector<Looper *> io_threads_;
-  Looper *main_thread_;
+  std::vector<Looper<TcpConnection> *> io_threads_;
+  Looper<TcpConnection> *main_thread_;
 
   std::unique_ptr<ThreadPool> tpool_;
   TcpConnection::CallBack new_conn_callback_;
@@ -48,4 +51,4 @@ class Server {
   Logger &log_;
 };
 
-#endif //CPPNET_SERVER_H
+#endif  // CPPNET_SERVER_H

@@ -6,15 +6,16 @@
 #define CPPNET_EPOLLER_H
 
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
-#include <Common.h>
-#include <Event.h>
+#include "Common.h"
+#include "Event.h"
 
 class Epoller {
  public:
-  using FdEventsMap = std::unordered_map<int, std::shared_ptr<VariantEventBase>>;
+  using FdEventsMap =
+      std::unordered_map<int, std::shared_ptr<VariantEventBase>>;
 
   explicit Epoller(int time_out = 5000, int events_num = 4096);
 
@@ -29,6 +30,7 @@ class Epoller {
   ~Epoller();
 
   DISALLOW_COPY_AND_ASSIGN(Epoller);
+
  private:
   FdEventsMap fd_to_events_;
   epoll_event *events_;
@@ -37,6 +39,4 @@ class Epoller {
   int events_num_;
 };
 
-#endif //CPPNET_EPOLLER_H
-
-
+#endif  // CPPNET_EPOLLER_H

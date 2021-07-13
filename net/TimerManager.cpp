@@ -7,18 +7,15 @@ extern "C" {
 #include <unistd.h>
 }
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <mutex>
-#include <algorithm>
 
-#include <TimerManager.h>
-#include <Logger.h>
+#include "Logger.h"
+#include "TimerManager.h"
 
-TimerManager::TimerManager() :
-    quit_(false) {
-  Start();
-}
+TimerManager::TimerManager() : quit_(false) { Start(); }
 
 void TimerManager::AddTimer(int timeout, std::function<void()> fun) {
   if (timeout < 0) return;
@@ -55,8 +52,9 @@ void TimerManager::ResetTimerFd(std::shared_ptr<Timer> timer, int timer_fd_) {
   timerfd_settime(timer_fd_, 0, &new_value, NULL);
 }
 
-void TimerManager::GetTimeSpec(struct timespec *ts, unsigned long long millisec) {
-  ts->tv_sec = (time_t) (millisec / 1000);
+void TimerManager::GetTimeSpec(struct timespec *ts,
+                               unsigned long long millisec) {
+  ts->tv_sec = (time_t)(millisec / 1000);
   ts->tv_nsec = (millisec % 1000) * 1000000;
 }
 
@@ -78,16 +76,15 @@ void TimerManager::HandelTimeout(int fd) {
   while (!timer_queue_.empty() && timer_queue_.top()->GetExpire() < now) {
     timer_queue_.top()->Run();
     if (!timer_queue_.top()->GetOnceFlag())
-      AddTimer(timer_queue_.top()->GetTimeOut(), timer_queue_.top()->GetCallBack());
+      AddTimer(timer_queue_.top()->GetTimeOut(),
+               timer_queue_.top()->GetCallBack());
     timer_queue_.pop();
   }
 
   con_.notify_one();
 }
 
-void TimerManager::SetFdFlag(int fd) {
-  fd_timer_flag_[fd] = false;
-}
+void TimerManager::SetFdFlag(int fd) { fd_timer_flag_[fd] = false; }
 
 void TimerManager::Start() {
   time_manager_thread_ = std::thread(&TimerManager::Loop, this);
@@ -98,13 +95,11 @@ void TimerManager::Loop() {
     std::unique_lock<std::mutex> lck(mut_);
     con_.wait(lck, [this]() {
       return !timer_queue_.empty() &&
-          fd_timer_flag_.end() != std::find_if(
-              fd_timer_flag_.begin(),
-              fd_timer_flag_.end(),
-              [](const map_value_type &mp) {
-                return mp.second == false;
-              }
-          );
+             fd_timer_flag_.end() != std::find_if(fd_timer_flag_.begin(),
+                                                  fd_timer_flag_.end(),
+                                                  [](const map_value_type &mp) {
+                                                    return mp.second == false;
+                                                  });
     });
 
     for (auto &mp : fd_timer_flag_) {
@@ -122,8 +117,7 @@ void TimerManager::Loop() {
 
 void TimerManager::Stop() {
   quit_ = true;
-  if (time_manager_thread_.joinable())
-    time_manager_thread_.join();
+  if (time_manager_thread_.joinable()) time_manager_thread_.join();
 }
 
 unsigned long long TimerManager::GetCurrentMillisecs() {
@@ -132,6 +126,4 @@ unsigned long long TimerManager::GetCurrentMillisecs() {
   return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
 }
 
-TimerManager::~TimerManager() {
-  Stop();
-}
+TimerManager::~TimerManager() { Stop(); }

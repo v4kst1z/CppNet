@@ -5,12 +5,15 @@
 #ifndef CPPNET_NET_CLIENT_H_
 #define CPPNET_NET_CLIENT_H_
 
-#include <Ipv4Addr.h>
-#include <Looper.h>
+#include "Ipv4Addr.h"
+#include "TcpConnection.h"
+
+template <typename T>
+class Looper;
 
 class Client {
  public:
-  Client(Looper *looper, std::shared_ptr<Ipv4Addr> addr);
+  Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr);
 
   void Connect();
 
@@ -29,10 +32,11 @@ class Client {
   ~Client() = default;
 
   DISALLOW_COPY_AND_ASSIGN(Client);
+
  private:
   bool quit_;
   std::shared_ptr<Ipv4Addr> addr_;
-  Looper *looper_;
+  Looper<TcpConnection> *looper_;
   Logger &log_;
   int conn_fd_;
   std::shared_ptr<TcpConnection> conn_;
@@ -44,4 +48,4 @@ class Client {
   TcpConnection::CallBack error_callback_;
 };
 
-#endif //CPPNET_NET_CLIENT_H_
+#endif  // CPPNET_NET_CLIENT_H_

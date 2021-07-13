@@ -2,45 +2,42 @@
 // Created by v4kst1z.
 //
 
-#include <Logger.h>
+#include "Logger.h"
 
 Logger &Logger::GetInstance() {
   static Logger log;
   return log;
 }
 
-Logger::LogStream Logger::operator()(const char *file_name, int line, const char *func_name, Level level) {
+Logger::LogStream Logger::operator()(const char *file_name, int line,
+                                     const char *func_name, Level level) {
   Logger::LogStream stream(level, this);
-  stream.stream_ << GetCurrentLogLevel(level) << GetCurrentDateTime() << file_name << " " << line << " " << func_name
-                 << " ";
+  stream.stream_ << GetCurrentLogLevel(level) << GetCurrentDateTime()
+                 << file_name << " " << line << " " << func_name << " ";
   return std::move(stream);
 }
 
-void Logger::Start() {
-  log_thread_ = std::thread(&Logger::Loop, this);
-}
+void Logger::Start() { log_thread_ = std::thread(&Logger::Loop, this); }
 
 void Logger::Loop() {
   while (true) {
     if (quit_ && queue_data_->Empty()) break;
     std::unique_ptr<Message> data = queue_data_->WaitPop();
     stream_ << data->GetData() << std::endl;
-    if (data->GetTerminal())
-      std::cout << data->GetData() << std::endl;
+    if (!data->GetTerminal()) std::cout << data->GetData() << std::endl;
   }
 }
 
 void Logger::Stop() {
   quit_ = true;
-  if (log_thread_.joinable())
-    log_thread_.join();
+  if (log_thread_.joinable()) log_thread_.join();
 }
 
-Logger::Logger(std::string file_name) :
-    quit_(false),
-    queue_data_(new SafeQueue<Message>()),
-    terminal_(false),
-    file_name_(file_name) {
+Logger::Logger(std::string file_name)
+    : quit_(false),
+      queue_data_(new SafeQueue<Message>()),
+      terminal_(false),
+      file_name_(file_name) {
   stream_.open(file_name, std::ios::out | std::ios::app);
 }
 
@@ -57,26 +54,18 @@ Logger::~Logger() {
   stream_.close();
 }
 
-Message::Message(const std::string &data, bool terminal) :
-    data_(std::move(data)),
-    terminal_(terminal) {}
+Message::Message(const std::string &data, bool terminal)
+    : data_(std::move(data)), terminal_(terminal) {}
 
-const std::string &Message::GetData() {
-  return data_;
-}
+const std::string &Message::GetData() { return data_; }
 
-bool Message::GetTerminal() {
-  return terminal_;
-}
+bool Message::GetTerminal() { return terminal_; }
 
 Logger::LogStream::LogStream(Level level, Logger *log)
-    : level_(level),
-      log_(log) {}
+    : level_(level), log_(log) {}
 
 Logger::LogStream::LogStream(Logger::LogStream &&rlog) noexcept
-    : stream_(std::move(rlog.stream_)),
-      level_(rlog.level_),
-      log_(rlog.log_) {
+    : stream_(std::move(rlog.stream_)), level_(rlog.level_), log_(rlog.log_) {
   rlog.log_ = nullptr;
 }
 

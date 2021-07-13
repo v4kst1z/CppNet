@@ -5,29 +5,31 @@
 #ifndef CPPNET_THREADPOOL_H
 #define CPPNET_THREADPOOL_H
 
-#include <iostream>
-#include <thread>
-#include <queue>
 #include <condition_variable>
-#include <mutex>
 #include <functional>
 #include <future>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <thread>
 #include <vector>
 
-#include <Common.h>
+#include "Common.h"
 
 class ThreadPool {
  public:
   explicit ThreadPool(uint8_t num_threads);
 
-  template<typename Func, typename... Args>
-  auto enqueue(Func &&f, Args &&... args) -> std::future<decltype(std::forward<Func>(f)(std::forward<Args>(args)...))>;
+  template <typename Func, typename... Args>
+  auto enqueue(Func &&f, Args &&...args) -> std::future<
+      decltype(std::forward<Func>(f)(std::forward<Args>(args)...))>;
 
   uint8_t GetThreadNum();
 
   ~ThreadPool();
 
   DISALLOW_COPY_AND_ASSIGN(ThreadPool);
+
  private:
   class BaseWork {
    public:
@@ -35,14 +37,13 @@ class ThreadPool {
     virtual void operator()() = 0;
   };
 
-  template<typename RT>
+  template <typename RT>
   class Work : public BaseWork {
    public:
     explicit Work(std::packaged_task<RT()> func) : func_(std::move(func)) {}
 
-    void operator()() override {
-      func_();
-    }
+    void operator()() override { func_(); }
+
    private:
     std::packaged_task<RT()> func_;
   };
@@ -57,12 +58,10 @@ class ThreadPool {
   int num_threads_;
 };
 
-inline ThreadPool::ThreadPool(uint8_t num_threads) :
-    num_threads_(num_threads),
-    stop_(false) {
+inline ThreadPool::ThreadPool(uint8_t num_threads)
+    : num_threads_(num_threads), stop_(false) {
   const uint8_t kMAX_THREADS = std::thread::hardware_concurrency() - 1;
-  if (num_threads_ > kMAX_THREADS)
-    num_threads_ = kMAX_THREADS;
+  if (num_threads_ > kMAX_THREADS) num_threads_ = kMAX_THREADS;
   stop_.store(false);
   thread_pool_.reserve(num_threads_);
   for (uint8_t id = 0; id < num_threads_; id++) {
@@ -70,16 +69,18 @@ inline ThreadPool::ThreadPool(uint8_t num_threads) :
   }
 }
 
-template<typename Func, typename ...Args>
-inline auto ThreadPool::enqueue(Func &&f, Args &&...args) -> std::future<decltype(std::forward<Func>(f)(std::forward<
-    Args>(args)...))> {
+template <typename Func, typename... Args>
+inline auto ThreadPool::enqueue(Func &&f, Args &&...args) -> std::future<
+    decltype(std::forward<Func>(f)(std::forward<Args>(args)...))> {
   using ret_type = decltype(std::forward<Func>(f)(std::forward<Args>(args)...));
-  std::function<ret_type()> func = std::bind(std::forward<Func>(f), std::forward<Args>(args)...);
+  std::function<ret_type()> func =
+      std::bind(std::forward<Func>(f), std::forward<Args>(args)...);
   std::packaged_task<ret_type()> tsk = std::packaged_task<ret_type()>(func);
   std::future<ret_type> ret_future = tsk.get_future();
   {
     std::unique_lock<std::mutex> lck(tasks_mtx_);
-    tasks_.emplace(std::unique_ptr<BaseWork>(new Work<ret_type>(std::move(tsk))));
+    tasks_.emplace(
+        std::unique_ptr<BaseWork>(new Work<ret_type>(std::move(tsk))));
   }
   tp_cond_.notify_one();
   return ret_future;
@@ -99,15 +100,12 @@ inline void ThreadPool::ThreadManager() {
   }
 }
 
-inline uint8_t ThreadPool::GetThreadNum() {
-  return num_threads_;
-}
+inline uint8_t ThreadPool::GetThreadNum() { return num_threads_; }
 
 inline ThreadPool::~ThreadPool() {
   stop_.store(true);
   tp_cond_.notify_all();
-  for (auto &t : thread_pool_)
-    t.join();
+  for (auto &t : thread_pool_) t.join();
 }
 
-#endif //CPPNET_THREADPOOL_H
+#endif  // CPPNET_THREADPOOL_H

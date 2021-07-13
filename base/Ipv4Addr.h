@@ -6,25 +6,23 @@
 #define CPPNET_IPV4ADDR_H
 
 extern "C" {
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 }
 
-#include <string>
 #include <regex>
+#include <string>
 
-#include <Common.h>
-#include <Logger.h>
+#include "Common.h"
+#include "Logger.h"
 
 class Ipv4Addr {
  public:
   Ipv4Addr() = default;
 
-  explicit Ipv4Addr(unsigned short port) :
-      port_(port),
-      addr_str_("127.0.0.1") {
+  explicit Ipv4Addr(unsigned short port) : port_(port), addr_str_("127.0.0.1") {
     bzero(&addr_, sizeof(addr_));
     addr_.sin_family = AF_INET;
     addr_.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -40,9 +38,8 @@ class Ipv4Addr {
     addr_ = *addr;
   }
 
-  Ipv4Addr(const char *addr, unsigned short port) :
-      port_(port),
-      addr_str_(addr) {
+  Ipv4Addr(const char *addr, unsigned short port)
+      : port_(port), addr_str_(addr) {
     bzero(&addr_, sizeof(addr_));
     addr_.sin_family = AF_INET;
     addr_.sin_port = htons(port);
@@ -60,35 +57,27 @@ class Ipv4Addr {
       inet_ntop(AF_INET, he->h_addr_list[0], ip_str, INET_ADDRSTRLEN);
       addr_str_ = ip_str;
     }
-
   }
 
   struct sockaddr_in *GetAddr() {
     return &addr_;
   }
 
-  const unsigned short GetPort() const {
-    return port_;
-  }
+  const unsigned short GetPort() const { return port_; }
 
-  void SetPort(unsigned short port) {
-    port_ = port;
-  }
+  void SetPort(unsigned short port) { port_ = port; }
 
-  const std::string GetIp() const {
-    return addr_str_;
-  }
+  const std::string GetIp() const { return addr_str_; }
 
-  void SetIp(const char *str) {
-    addr_str_ = str;
-  }
+  void SetIp(const char *str) { addr_str_ = str; }
 
   DISALLOW_COPY_AND_ASSIGN(Ipv4Addr);
+
  private:
   bool IsIpv4(const std::string &addr) {
     std::regex pattern(
-        "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-    );
+        "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|["
+        "01]?[0-9][0-9]?)$");
     if (std::regex_match(addr, pattern))
       return true;
     else
@@ -97,7 +86,7 @@ class Ipv4Addr {
 
   unsigned short port_;
   std::string addr_str_;
-  struct sockaddr_in addr_{};
+  struct sockaddr_in addr_ {};
 };
 
-#endif //CPPNET_IPV4ADDR_H
+#endif  // CPPNET_IPV4ADDR_H
