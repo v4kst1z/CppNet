@@ -8,7 +8,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include "Common.h"
 #include "SafeQueue.h"
 #include "UdpConnection.h"
 
@@ -45,7 +44,7 @@ typedef struct DnsQuestion {
 typedef struct Dns {
  public:
   Dns() = default;
-  ~Dns() { free(question_); }
+  ~Dns() = default;
 
   DnsHeader header_;
   char question_[];
@@ -74,34 +73,45 @@ typedef struct DnsAnswer {
 
 class AsyncDns {
  public:
-  using ConnMap = std::unordered_map<int, std::shared_ptr<UdpConnection>>;
+  using ConnMap =
+      std::unordered_map<std::string, std::shared_ptr<UdpConnection>>;
+
+  AsyncDns();
 
   explicit AsyncDns(Looper<UdpConnection> *looper);
 
   AsyncDns(Looper<UdpConnection> *looper,
            std::shared_ptr<Ipv4Addr> dns_server_addr);
 
-  void SetNewConnCallback(UdpConnection::CallBack &&cb);
   void SetMessageCallBack(UdpConnection::MessageCallBack &&cb);
-  void SetCloseCallBack(UdpConnection::CallBack &&cb);
   void SetSendDataCallBack(UdpConnection::CallBack &&cb);
   void SetErrorCallBack(UdpConnection::CallBack &&cb);
+
+  void StartLoop();
+  void Loop();
+
+  void AddDnsQuery(std::string &domain);
+  void AddDnsQuery(const char *domain);
+
+  void PrintQuery();
 
   DISALLOW_COPY_AND_ASSIGN(AsyncDns);
 
  private:
-  Dns *CreateDnsQuery(std::unique_ptr<DnsMessage> domain);
+  void CreateDnsQuery(std::string domain, int len);
 
   DnsHeader *CreateHeader();
 
-  DnsQuestion *CreateQuestion(std::unique_ptr<DnsMessage> domain);
+  DnsQuestion *CreateQuestion(std::string domain, int len);
 
-  std::string ParseResponse(char *buffer);
+  std::string ParseResponse(std::string &);
 
   bool quit_;
-  ConnMap fd_to_conn_;
+  int dns_socket_;
+  ConnMap domain_to_conn_;
   Looper<UdpConnection> *looper_;
   Logger &log_;
+  std::unordered_map<std::string, std::string> domain_to_ip_;
   std::thread dns_thread_;
   std::unique_ptr<SafeQueue<DnsMessage>> queue_domain_;
   std::shared_ptr<Ipv4Addr> dns_server_addr_;

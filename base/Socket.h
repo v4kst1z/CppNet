@@ -26,7 +26,7 @@ inline int CreateTcpSocket() {
 }
 
 inline int CreateUdpSocket() {
-  int socket_fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+  int socket_fd = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   ;
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;
@@ -41,7 +41,7 @@ inline int CreateNonblockAndCloexecTcpSocket() {
 
 inline int CreateNonblockAndCloexecUdpSocket() {
   int socket_fd =
-      ::socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+      ::socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
   ;
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;

@@ -182,7 +182,9 @@ inline Looper<T>::Looper(Ipv4Addr *addr)
   fd.EnableReadEvents(true);
   fd.SetReadCallback([this]() {
     uint64_t num = 1;
-    ssize_t n = read(wakeup_fd_, &num, sizeof(num));
+    ssize_t n = 0;
+    while ((n = read(wakeup_fd_, &num, sizeof(num))) > 0) {
+    }
   });
   epoller_->AddEvent(std::make_shared<VariantEventBase>(fd));
 }
@@ -202,7 +204,9 @@ inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
   event_fd.EnableReadEvents(true);
   event_fd.SetReadCallback([this]() {
     uint64_t num = 1;
-    ssize_t n = read(wakeup_fd_, &num, sizeof(num));
+    ssize_t n = 0;
+    while ((n = read(wakeup_fd_, &num, sizeof(num))) > 0) {
+    }
   });
   epoller_->AddEvent(std::make_shared<VariantEventBase>(event_fd));
 
@@ -321,7 +325,9 @@ inline void Looper<T>::Loop() {
       InitServer();
       break;
     case LOOPFLAG::CLIENT:
+      break;
     case LOOPFLAG::UDPCLIENT:
+      loop_start_ = true;
       break;
     default:
       DEBUG << "Please Set loop flag!";

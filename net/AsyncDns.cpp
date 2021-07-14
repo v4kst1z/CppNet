@@ -6,46 +6,53 @@ extern "C" {
 #include <sys/types.h>
 }
 
+#include <functional>
 #include <random>
 #include <vector>
 
 #include "AsyncDns.h"
+#include "Common.h"
 #include "Ipv4Addr.h"
 #include "Looper.h"
 #include "UdpConnection.h"
 
+AsyncDns::AsyncDns()
+    : quit_(false),
+      dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
+      log_(Logger::GetInstance()),
+      queue_domain_(new SafeQueue<DnsMessage>()),
+      dns_server_addr_(new Ipv4Addr("114.114.114.114", 53)) {
+  looper_ = new Looper<UdpConnection>(nullptr);
+  looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
+  log_.Start();
+}
+
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
     : quit_(false),
+      dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       looper_(looper),
       log_(Logger::GetInstance()),
+      queue_domain_(new SafeQueue<DnsMessage>()),
       dns_server_addr_(new Ipv4Addr("114.114.114.114", 53)) {
-  looper->SetLoopFlag(LOOPFLAG::UDPCLIENT);
+  looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
-  CreateDnsQuery(make_unique<DnsMessage>(strlen("www.jd.com"), "www.jd.com"));
 }
 
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper,
                    std::shared_ptr<Ipv4Addr> dns_server_addr)
     : quit_(false),
+      dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       looper_(looper),
       log_(Logger::GetInstance()),
+      queue_domain_(new SafeQueue<DnsMessage>()),
       dns_server_addr_(dns_server_addr) {
+  looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
-}
-
-void AsyncDns::SetNewConnCallback(UdpConnection::CallBack &&cb) {
-  new_conn_callback_ = std::move(cb);
-  looper_->SetNewConnCallback(new_conn_callback_);
 }
 
 void AsyncDns::SetMessageCallBack(UdpConnection::MessageCallBack &&cb) {
   message_callback_ = std::move(cb);
   looper_->SetMessageCallBack(message_callback_);
-}
-
-void AsyncDns::SetCloseCallBack(UdpConnection::CallBack &&cb) {
-  close_callback_ = std::move(cb);
-  looper_->SetCloseCallBack(close_callback_);
 }
 
 void AsyncDns::SetSendDataCallBack(UdpConnection::CallBack &&cb) {
@@ -56,6 +63,44 @@ void AsyncDns::SetSendDataCallBack(UdpConnection::CallBack &&cb) {
 void AsyncDns::SetErrorCallBack(UdpConnection::CallBack &&cb) {
   error_callback_ = std::move(cb);
   looper_->SetErrorCallBack(error_callback_);
+}
+
+void AsyncDns::StartLoop() { dns_thread_ = std::thread(&AsyncDns::Loop, this); }
+
+void AsyncDns::Loop() {
+  looper_->Start();
+  sockets::Connect(dns_socket_, dns_server_addr_.get());
+  EventBase<Event> fd = EventBase<Event>(dns_socket_);
+  fd.EnableReadEvents(true);
+  fd.SetReadCallback([this]() {
+    std::string domain;
+    std::string ip = ParseResponse(domain);
+    domain_to_ip_.insert({domain, ip});
+  });
+  looper_->AddEvent(std::make_shared<VariantEventBase>(fd));
+
+  while (true) {
+    if (quit_ && queue_domain_->Empty()) break;
+    std::unique_ptr<DnsMessage> data = queue_domain_->WaitPop();
+    looper_->AddTask(std::bind(&AsyncDns::CreateDnsQuery, this, data->domain_,
+                               data->domain_len_));
+  }
+}
+
+void AsyncDns::AddDnsQuery(std::string &domain) {
+  queue_domain_->Push(make_unique<DnsMessage>(domain.size(), domain));
+}
+
+void AsyncDns::AddDnsQuery(const char *domain) {
+  queue_domain_->Push(make_unique<DnsMessage>(strlen(domain), domain));
+}
+
+void AsyncDns::PrintQuery() {
+  std::unordered_map<std::string, std::string> tmp;
+  tmp.swap(domain_to_ip_);
+  for (auto &elem : tmp) {
+    DEBUG << elem.first << " " << elem.second;
+  }
 }
 
 DnsHeader *AsyncDns::CreateHeader() {
@@ -70,31 +115,31 @@ DnsHeader *AsyncDns::CreateHeader() {
   return header;
 }
 
-DnsQuestion *AsyncDns::CreateQuestion(std::unique_ptr<DnsMessage> domain) {
+DnsQuestion *AsyncDns::CreateQuestion(std::string domain, int domain_len) {
   std::string delimiter = ".";
   size_t pos = 0;
   std::string res = "";
   size_t len = 0;
 
-  DnsQuestion *ques = new DnsQuestion(domain->domain_len_ + 2);
+  DnsQuestion *ques = new DnsQuestion(domain_len + 2);
   ques->question_class_ = htons(1);
   ques->question_type_ = htons(1);
   memset(ques->domain_, '\x00', ques->domain_len_);
 
-  while ((pos = domain->domain_.find(delimiter)) != std::string::npos) {
+  while ((pos = domain.find(delimiter)) != std::string::npos) {
     ques->domain_[len++] = pos;
-    memcpy(ques->domain_ + len, domain->domain_.data(), pos);
+    memcpy(ques->domain_ + len, domain.data(), pos);
     len += pos;
-    domain->domain_.erase(0, pos + 1);
+    domain.erase(0, pos + 1);
   }
-  ques->domain_[len++] = domain->domain_.size();
-  memcpy(ques->domain_ + len, domain->domain_.data(), domain->domain_.size());
+  ques->domain_[len++] = domain.size();
+  memcpy(ques->domain_ + len, domain.data(), domain.size());
   return ques;
 }
 
-Dns *AsyncDns::CreateDnsQuery(std::unique_ptr<DnsMessage> domain) {
+void AsyncDns::CreateDnsQuery(std::string domain, int len) {
   DnsHeader *header = CreateHeader();
-  DnsQuestion *ques = CreateQuestion(std::move(domain));
+  DnsQuestion *ques = CreateQuestion(domain, len);
   size_t ques_size = ques->domain_len_ + 4;
   Dns *dns_query = static_cast<Dns *>(malloc(sizeof(Dns) + ques_size));
 
@@ -102,29 +147,26 @@ Dns *AsyncDns::CreateDnsQuery(std::unique_ptr<DnsMessage> domain) {
   memcpy((char *)(dns_query) + 12, ques->domain_, ques->domain_len_);
   memcpy((char *)dns_query + 12 + ques->domain_len_, &ques->question_type_, 4);
 
-  int sock = socket(AF_INET, SOCK_DGRAM, 0);
-  int slen = sendto(sock, dns_query, 12 + ques->domain_len_ + 4, 0,
-                    (struct sockaddr *)dns_server_addr_->GetAddr(),
-                    sizeof(struct sockaddr));
+  sockets::SendTo(dns_socket_, dns_server_addr_.get(),
+                  reinterpret_cast<const char *>(dns_query),
+                  12 + ques->domain_len_ + 4);
+
+  delete header;
+  delete ques;
+  delete dns_query;
+  return;
+}
+
+std::string AsyncDns::ParseResponse(std::string &domain) {
   struct sockaddr_in addr;
   size_t addr_len = sizeof(struct sockaddr_in);
 
-  char buf[BUFSIZ];
-  memset(buf, '\x00', BUFSIZ);
+  char buffer[BUFSIZ];
+  memset(buffer, '\x00', BUFSIZ);
 
-  int n = recvfrom(sock, buf, BUFSIZ, 0, (struct sockaddr *)&addr,
+  int n = recvfrom(dns_socket_, buffer, BUFSIZ, 0, (struct sockaddr *)&addr,
                    (socklen_t *)&addr_len);
 
-  for (int id = 0; id < 1024; id++) {
-    printf(" %x", buf[id] & 0xff);
-  }
-  std::cout << ParseResponse(buf) << std::endl;
-  delete header;
-  delete ques;
-  return dns_query;
-}
-
-std::string AsyncDns::ParseResponse(char *buffer) {
   size_t idx = 0;
   // parse dns header
   std::unique_ptr<DnsHeader> header(new DnsHeader);
@@ -137,6 +179,21 @@ std::string AsyncDns::ParseResponse(char *buffer) {
 
   // parse dns header
   std::unique_ptr<DnsQuestion> ques(new DnsQuestion(strlen(buffer + 12) + 1));
+  char domain_chars[128];
+  // 3www5baidu3com
+  memset(domain_chars, '\x00', 128);
+
+  memcpy(domain_chars, buffer + 13, buffer[12]);
+  int id = 0;
+  for (id = buffer[12 + id] + 1; id < ques->domain_len_; id++) {
+    domain_chars[strlen(domain_chars)] = '.';
+    int len = buffer[12 + id];
+    if (len == 0) break;
+    memcpy(domain_chars + strlen(domain_chars), buffer + 12 + id + 1, len);
+    id += len;
+  }
+  domain_chars[strlen(domain_chars) - 1] = '\x00';
+  domain = domain_chars;
   memcpy(ques->domain_, buffer + 12, ques->domain_len_);
   ques->question_type_ =
       ntohs(*(unsigned short *)(buffer + 12 + ques->domain_len_));
