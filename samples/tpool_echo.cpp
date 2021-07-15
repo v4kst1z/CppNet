@@ -2,9 +2,11 @@
 // Created by v4kst1z.
 //
 
-#include "Server.h"
-#include "Ipv4Addr.h"
-#include "Logger.h"
+#include <cstring>
+
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
+#include "../include/Server.h"
 
 void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
   auto peer = conn->GetPeerAddr();

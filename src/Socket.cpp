@@ -2,9 +2,6 @@
 // Created by v4kst1z
 //
 
-#ifndef CPPNET_BASE_SOCKET_H
-#define CPPNET_BASE_SOCKET_H
-
 extern "C" {
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -13,33 +10,34 @@ extern "C" {
 #include <unistd.h>
 }
 
-#include "Common.h"
-#include "Ipv4Addr.h"
-#include "Logger.h"
-#include "UdpConnection.h"
+#include <cstring>
+
+#include "../include/Common.h"
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
+#include "../include/UdpConnection.h"
 
 namespace sockets {
-inline int CreateTcpSocket() {
+int CreateTcpSocket() {
   int socket_fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;
 }
 
-inline int CreateUdpSocket() {
+int CreateUdpSocket() {
   int socket_fd = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  ;
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;
 }
 
-inline int CreateNonblockAndCloexecTcpSocket() {
+int CreateNonblockAndCloexecTcpSocket() {
   int socket_fd = ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
                            IPPROTO_TCP);
   if (socket_fd < 0) ERROR << "create socket failed!";
   return socket_fd;
 }
 
-inline int CreateNonblockAndCloexecUdpSocket() {
+int CreateNonblockAndCloexecUdpSocket() {
   int socket_fd =
       ::socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
   ;
@@ -47,7 +45,7 @@ inline int CreateNonblockAndCloexecUdpSocket() {
   return socket_fd;
 }
 
-inline void SetNonBlock(int socket_fd) {
+void SetNonBlock(int socket_fd) {
   int opts = fcntl(socket_fd, F_GETFL);
   if (opts < 0) ERROR << "fcntl get failed!";
 
@@ -55,7 +53,7 @@ inline void SetNonBlock(int socket_fd) {
     ERROR << "fcntl set failed!";
 }
 
-inline void UnsetNonBlock(int socket_fd) {
+void UnsetNonBlock(int socket_fd) {
   int opts = fcntl(socket_fd, F_GETFL);
   if (opts < 0) ERROR << "fcntl get failed!";
 
@@ -63,35 +61,35 @@ inline void UnsetNonBlock(int socket_fd) {
     ERROR << "fcntl set failed!";
 }
 
-inline void Bind(int socket_fd, Ipv4Addr *addr) {
+void Bind(int socket_fd, Ipv4Addr *addr) {
   struct sockaddr_in *bind_addr = addr->GetAddr();
   if (bind(socket_fd, (struct sockaddr *)bind_addr, sizeof(*bind_addr)) < 0)
     ERROR << "bind failed!";
 }
 
-inline void Listen(int socket_fd) {
+void Listen(int socket_fd) {
   if (listen(socket_fd, SOMAXCONN) < 0) ERROR << "listen failed!";
 }
 
-inline void Close(int socket_fd) {
+void Close(int socket_fd) {
   if (close(socket_fd) < 0) ERROR << "close failed!";
 }
 
-inline void SetReuseAddr(int socket_fd) {
+void SetReuseAddr(int socket_fd) {
   int optval = 1;
   if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) <
       0)
     ERROR << "setsockopt failed!";
 }
 
-inline void SetReusePort(int socket_fd) {
+void SetReusePort(int socket_fd) {
   int optval = 1;
   if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) <
       0)
     ERROR << "setsockopt failed!";
 }
 
-inline int Accept(int socket_fd, Ipv4Addr *addr) {
+int Accept(int socket_fd, Ipv4Addr *addr) {
   struct sockaddr_in *bind_addr = addr->GetAddr();
   char ip_str[INET_ADDRSTRLEN];
   socklen_t addrlen = sizeof(*bind_addr);
@@ -109,7 +107,7 @@ inline int Accept(int socket_fd, Ipv4Addr *addr) {
   return conn_fd;
 }
 
-inline int Connect(int sockfd, Ipv4Addr *addr) {
+int Connect(int sockfd, Ipv4Addr *addr) {
   struct sockaddr_in *server_addr = addr->GetAddr();
   socklen_t addrlen = sizeof(*server_addr);
   int ret = connect(sockfd, (struct sockaddr *)server_addr, addrlen);
@@ -117,7 +115,7 @@ inline int Connect(int sockfd, Ipv4Addr *addr) {
   return ret;
 }
 
-inline void SendTo(int server_fd, Ipv4Addr *peer, const char *data, int len) {
+void SendTo(int server_fd, Ipv4Addr *peer, const char *data, int len) {
   struct sockaddr_in *dst = peer->GetAddr();
   ssize_t ret = sendto(server_fd, data, len, 0, (const struct sockaddr *)dst,
                        sizeof(*dst));
@@ -127,8 +125,7 @@ inline void SendTo(int server_fd, Ipv4Addr *peer, const char *data, int len) {
   }
 }
 
-inline int RecvFrom(int server_fd, std::shared_ptr<UdpConnection> conn,
-                    int &error) {
+int RecvFrom(int server_fd, std::shared_ptr<UdpConnection> conn, int &error) {
   struct sockaddr_in clinet_addr;
   socklen_t len = sizeof(clinet_addr);
   char buf[BUFSIZ];
@@ -143,5 +140,3 @@ inline int RecvFrom(int server_fd, std::shared_ptr<UdpConnection> conn,
   return ret;
 }
 }  // namespace sockets
-
-#endif  // CPPNET_BASE_SOCKET_H

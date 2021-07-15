@@ -3,9 +3,11 @@
 // Created by v4kst1z
 //
 
-#include "Ipv4Addr.h"
-#include "Logger.h"
-#include "UdpServer.h"
+#include <cstring>
+
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
+#include "../include/UdpServer.h"
 
 void MessageCB(const std::shared_ptr<UdpConnection> &conn, IOBuffer &buf) {
   auto peer = conn->GetPeerAddr();

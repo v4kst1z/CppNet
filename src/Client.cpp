@@ -2,13 +2,13 @@
 // Created by v4kst1z
 //
 
-#include "Client.h"
+#include "../include/Client.h"
 
 #include <memory>
 
-#include "Looper.h"
-#include "Socket.h"
-#include "TcpConnection.h"
+#include "../include/Looper.h"
+#include "../include/Socket.h"
+#include "../include/TcpConnection.h"
 
 Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr)
     : quit_(false),

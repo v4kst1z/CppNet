@@ -2,17 +2,20 @@
 // Created by v4kst1z.
 //
 
+#include "../include/Client.h"
+
+#include <cstring>
 #include <memory>
 
-#include "TimerManager.h"
-#include "Server.h"
-#include "Ipv4Addr.h"
-#include "Logger.h"
-#include "Client.h"
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
+#include "../include/Server.h"
+#include "../include/TimerManager.h"
 
 void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
   auto peer = conn->GetPeerAddr();
-  std::cout << "connect to " << peer->GetIp() << ":" << peer->GetPort() << std::endl;
+  std::cout << "connect to " << peer->GetIp() << ":" << peer->GetPort()
+            << std::endl;
 }
 
 void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
@@ -33,15 +36,9 @@ int main() {
   client.Connect();
   client.SendData("hello world\n");
   client.SendData("hello world1\n");
-  l.AddTimer(1000, [&]() {
-    client.SendData("hello world2\n");
-  });
-  l.AddTimer(7000, [&]() {
-    client.SendData("hello world4\n");
-  });
-  l.AddTimer(2000, [&]() {
-    client.SendData("hello world3\n");
-  });
+  l.AddTimer(1000, [&]() { client.SendData("hello world2\n"); });
+  l.AddTimer(7000, [&]() { client.SendData("hello world4\n"); });
+  l.AddTimer(2000, [&]() { client.SendData("hello world3\n"); });
   l.Loop();
   return 0;
 }

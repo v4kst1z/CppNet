@@ -2,13 +2,15 @@
 // Created by v4kst1z
 //
 
-#include "TcpConnection.h"
+#include "../include/TcpConnection.h"
 
 #include <unistd.h>
 
-#include "IOBuffer.h"
-#include "Looper.h"
-#include "Socket.h"
+#include <cstring>
+
+#include "../include/IOBuffer.h"
+#include "../include/Looper.h"
+#include "../include/Socket.h"
 
 TcpConnection::TcpConnection(int conn_fd, BaseLooper *looper,
                              std::shared_ptr<Ipv4Addr> addr)

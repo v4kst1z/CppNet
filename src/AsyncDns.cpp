@@ -6,22 +6,23 @@ extern "C" {
 #include <sys/types.h>
 }
 
+#include <cstring>
 #include <functional>
 #include <random>
 #include <vector>
 
-#include "AsyncDns.h"
-#include "Common.h"
-#include "Ipv4Addr.h"
-#include "Looper.h"
-#include "UdpConnection.h"
+#include "../include/AsyncDns.h"
+#include "../include/Common.h"
+#include "../include/Ipv4Addr.h"
+#include "../include/Looper.h"
+#include "../include/UdpConnection.h"
 
 AsyncDns::AsyncDns()
     : quit_(false),
       dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
-      dns_server_addr_(new Ipv4Addr("114.114.114.114", 53)) {
+      dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
   looper_ = new Looper<UdpConnection>(nullptr);
   looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
@@ -33,7 +34,7 @@ AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
       looper_(looper),
       log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
-      dns_server_addr_(new Ipv4Addr("114.114.114.114", 53)) {
+      dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
   looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
 }

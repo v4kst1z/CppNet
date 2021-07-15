@@ -2,7 +2,7 @@
 // Created by v4kst1z
 //
 
-#include "IOBuffer.h"
+#include "../include/IOBuffer.h"
 
 IOBuffer::IOBuffer(size_t init_size, int prepend_size)
     : buffer_(prepend_size + init_size),

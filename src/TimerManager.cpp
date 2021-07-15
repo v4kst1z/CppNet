@@ -12,8 +12,8 @@ extern "C" {
 #include <memory>
 #include <mutex>
 
-#include "Logger.h"
-#include "TimerManager.h"
+#include "../include/Logger.h"
+#include "../include/TimerManager.h"
 
 TimerManager::TimerManager() : quit_(false) { Start(); }
 

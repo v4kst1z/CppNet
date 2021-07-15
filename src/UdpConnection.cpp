@@ -2,10 +2,10 @@
 // Created by v4kst1z
 //
 
-#include "UdpConnection.h"
+#include "../include/UdpConnection.h"
 
-#include "Logger.h"
-#include "Looper.h"
+#include "../include/Logger.h"
+#include "../include/Looper.h"
 
 UdpConnection::UdpConnection(BaseLooper *looper)
     : looper_(looper), perr_addr_(new Ipv4Addr()) {}

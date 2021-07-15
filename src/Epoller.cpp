@@ -6,8 +6,8 @@ extern "C" {
 #include <unistd.h>
 }
 
-#include "Epoller.h"
-#include "Logger.h"
+#include "../include/Epoller.h"
+#include "../include/Logger.h"
 
 Epoller::Epoller(int time_out, int events_num)
     : epfd_(epoll_create1(EPOLL_CLOEXEC)),

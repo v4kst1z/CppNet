@@ -2,14 +2,14 @@
 // Created by v4kst1z
 //
 
-#include "Server.h"
+#include "../include/Server.h"
 
 #include <csignal>
 #include <memory>
 
-#include "Ipv4Addr.h"
-#include "Logger.h"
-#include "TimerManager.h"
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
+#include "../include/TimerManager.h"
 
 Server::Server(int io_threads_num, int timer_num, unsigned short port,
                uint8_t tpool_num)

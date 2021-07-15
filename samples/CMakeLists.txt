@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/samples/) 
+
 add_executable(echo echo.cpp)
 target_link_libraries(echo cppnet)
 

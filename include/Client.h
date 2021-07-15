@@ -6,6 +6,7 @@
 #define CPPNET_NET_CLIENT_H_
 
 #include "Ipv4Addr.h"
+#include "Logger.h"
 #include "TcpConnection.h"
 
 template <typename T>

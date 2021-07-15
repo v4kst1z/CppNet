@@ -4,9 +4,9 @@
 
 #include <memory>
 
-#include "AsyncDns.h"
-#include "Ipv4Addr.h"
-#include "Logger.h"
+#include "../include/AsyncDns.h"
+#include "../include/Ipv4Addr.h"
+#include "../include/Logger.h"
 
 int main() {
   auto dns = new AsyncDns();

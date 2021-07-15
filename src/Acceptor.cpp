@@ -2,10 +2,10 @@
 // Created by v4kst1z
 //
 
-#include "Acceptor.h"
+#include "../include/Acceptor.h"
 
-#include "Looper.h"
-#include "TcpConnection.h"
+#include "../include/Looper.h"
+#include "../include/TcpConnection.h"
 
 Acceptor::Acceptor(Ipv4Addr *addr, Looper<TcpConnection> *looper)
     : listen_addr_(addr),
