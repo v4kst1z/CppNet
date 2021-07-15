@@ -35,7 +35,6 @@ AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
       log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
       dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
-  looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
   log_.Start();
 }
 
