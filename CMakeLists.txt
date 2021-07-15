@@ -7,7 +7,8 @@ project ("CppNet")
 
 
 set (CMAKE_CXX_COMPILER "clang++")
-set(CMAKE_BUILD_TYPE Debug)
+set (CMAKE_BUILD_TYPE Debug)
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 set (CMAKE_CXX_STANDARD 11)
 
@@ -16,11 +17,10 @@ find_package(Threads)
 include_directories(base)
 include_directories(net)
 
-file(GLOB BASE_LIST "base/*.h")
-file(GLOB NET_LIST "net/*.h" "net/*.cpp")
+file(GLOB NET_LIST "net/*.cpp")
 
-#add_executable(CppNet CppNet.cpp ${BASE_LIST} ${NET_LIST} net/UdpServer.cpp net/UdpServer.h net/UdpConnection.cpp net/UdpConnection.h)
-#target_link_libraries(CppNet ${CMAKE_THREAD_LIBS_INIT})
+add_library(cppnet ${NET_LIST})
+target_link_libraries(cppnet ${CMAKE_THREAD_LIBS_INIT})
 
 add_subdirectory(example)
 
