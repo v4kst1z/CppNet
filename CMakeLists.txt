@@ -35,15 +35,15 @@ target_link_libraries(cppnet_shared ${CMAKE_THREAD_LIBS_INIT})
 target_public_headers(cppnet_shared ${INC_LIST})
 
 
-INSTALL(TARGETS cppnet 
-        LIBRARY DESTINATION lib
-        PUBLIC_HEADER DESTINATION include
-)
+#INSTALL(TARGETS cppnet 
+#        LIBRARY DESTINATION lib
+#        PUBLIC_HEADER DESTINATION include
+#)
 
-INSTALL(TARGETS cppnet_shared 
-        LIBRARY DESTINATION lib
-        PUBLIC_HEADER DESTINATION include
-)
+#INSTALL(TARGETS cppnet_shared 
+#        LIBRARY DESTINATION lib
+#        PUBLIC_HEADER DESTINATION include
+#)
 
 add_subdirectory(samples)
 
