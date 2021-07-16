@@ -55,7 +55,7 @@ Logger::~Logger() {
 }
 
 Message::Message(const std::string &data, bool terminal)
-    : data_(std::move(data)), terminal_(terminal) {}
+    : data_(data), terminal_(terminal) {}
 
 const std::string &Message::GetData() { return data_; }
 
