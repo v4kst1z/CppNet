@@ -49,21 +49,6 @@ AsyncDns::AsyncDns(Looper<UdpConnection> *looper,
   log_.Start();
 }
 
-void AsyncDns::SetMessageCallBack(UdpConnection::MessageCallBack &&cb) {
-  message_callback_ = std::move(cb);
-  looper_->SetMessageCallBack(message_callback_);
-}
-
-void AsyncDns::SetSendDataCallBack(UdpConnection::CallBack &&cb) {
-  send_data_callback_ = std::move(cb);
-  looper_->SetSendDataCallBack(send_data_callback_);
-}
-
-void AsyncDns::SetErrorCallBack(UdpConnection::CallBack &&cb) {
-  error_callback_ = std::move(cb);
-  looper_->SetErrorCallBack(error_callback_);
-}
-
 void AsyncDns::StartLoop() { dns_thread_ = std::thread(&AsyncDns::Loop, this); }
 
 void AsyncDns::Loop() {
@@ -74,6 +59,10 @@ void AsyncDns::Loop() {
   fd.SetReadCallback([this]() {
     std::string domain;
     std::string ip = ParseResponse(domain);
+    for (auto fd : domain_to_fd_[domain]) {
+      write(fd, ip.data(), ip.size());  //唤醒 fd
+    }
+    domain_to_fd_.erase(domain);
     domain_to_ip_.insert({domain, ip});
   });
   looper_->AddEvent(std::make_shared<VariantEventBase>(fd));
@@ -81,25 +70,25 @@ void AsyncDns::Loop() {
   while (true) {
     if (quit_ && queue_domain_->Empty()) break;
     std::unique_ptr<DnsMessage> data = queue_domain_->WaitPop();
+    domain_to_fd_[data->domain_].push_back(data->fd_);
     looper_->AddTask(std::bind(&AsyncDns::CreateDnsQuery, this, data->domain_,
                                data->domain_len_));
   }
 }
 
-void AsyncDns::AddDnsQuery(std::string &domain) {
-  queue_domain_->Push(make_unique<DnsMessage>(domain.size(), domain));
+void AsyncDns::AddDnsQuery(int fd, std::string &domain) {
+  queue_domain_->Push(make_unique<DnsMessage>(fd, domain.size(), domain));
 }
 
-void AsyncDns::AddDnsQuery(const char *domain) {
-  queue_domain_->Push(make_unique<DnsMessage>(strlen(domain), domain));
+void AsyncDns::AddDnsQuery(int fd, const char *domain) {
+  queue_domain_->Push(make_unique<DnsMessage>(fd, strlen(domain), domain));
 }
 
-void AsyncDns::PrintQuery() {
-  std::unordered_map<std::string, std::string> tmp;
-  tmp.swap(domain_to_ip_);
-  for (auto &elem : tmp) {
-    DEBUG << elem.first << " " << elem.second;
-  }
+std::string AsyncDns::GetIp(std::string domain) {
+  if (domain_to_ip_.find(domain) != domain_to_ip_.end())
+    return domain_to_ip_[domain];
+  else
+    return "";
 }
 
 DnsHeader *AsyncDns::CreateHeader() {
