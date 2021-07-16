@@ -70,7 +70,7 @@ Logger::LogStream::LogStream(Logger::LogStream &&rlog) noexcept
 }
 
 void Logger::LogStream::AppendLog(const std::string &log, bool terminal) {
-  log_->queue_data_->Push(make_unique<Message>(log, terminal));
+  log_->queue_data_->Push(std::unique_ptr<Message>(new Message(log, terminal)));
 }
 
 Logger::LogStream::~LogStream() {
