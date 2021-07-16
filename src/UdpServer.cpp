@@ -59,6 +59,16 @@ void UdpServer::AddTimer(int timeout, std::function<void()> fun) {
 
 ThreadPool *UdpServer::GetThreadPoolPtr() { return tpool_.get(); }
 
+Looper<UdpConnection> *UdpServer::GetMianLoop() { return main_thread_; }
+
+std::vector<Looper<UdpConnection> *> UdpServer::GetIoLoop() {
+  return io_threads_;
+}
+
+unsigned short UdpServer::GetPort() { return server_port_; }
+
+Ipv4Addr *UdpServer::GetAddr() { return server_addr_; }
+
 void UdpServer::LoopStart() {
   for (auto &io : io_threads_) {
     io->SetLoopFlag(LOOPFLAG::UDPSERVER);

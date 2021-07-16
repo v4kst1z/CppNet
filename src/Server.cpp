@@ -78,6 +78,10 @@ void Server::AddTimer(int timeout, std::function<void()> fun) {
   timer_manager_->AddTimer(timeout, fun);
 }
 
+Looper<TcpConnection> *Server::GetMianLoop() { return main_thread_; }
+
+std::vector<Looper<TcpConnection> *> Server::GetIoLoop() { return io_threads_; }
+
 void Server::Exit() {
   for (auto &io : io_threads_) io->Stop();
   for (auto &io : io_threads_) delete io;
@@ -91,3 +95,7 @@ void Server::Exit() {
 Server::~Server() { Exit(); }
 
 ThreadPool *Server::GetThreadPoolPtr() { return tpool_.get(); }
+
+unsigned short Server::GetPort() { return server_port_; }
+
+Ipv4Addr *Server::GetAddr() { return server_addr_; }

@@ -35,6 +35,12 @@ class UdpServer {
 
   ThreadPool *GetThreadPoolPtr();
 
+  Looper<UdpConnection> *GetMianLoop();
+  std::vector<Looper<UdpConnection> *> GetIoLoop();
+
+  unsigned short GetPort();
+  Ipv4Addr *GetAddr();
+
   void LoopStart();
 
   void Exit();

@@ -25,7 +25,13 @@ class Server {
 
   void AddTimer(int timeout, std::function<void()> fun);
 
+  Looper<TcpConnection> *GetMianLoop();
+  std::vector<Looper<TcpConnection> *> GetIoLoop();
+
   ThreadPool *GetThreadPoolPtr();
+
+  unsigned short GetPort();
+  Ipv4Addr *GetAddr();
 
   void LoopStart();
 
