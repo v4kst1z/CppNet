@@ -44,6 +44,8 @@ void Epoller::ModEvent(std::shared_ptr<VariantEventBase> event_base) {
         tep.events = e.GetEvents();
         tep.data.fd = e.GetFd();
       });
+
+  DEBUG << "fd is " << tep.data.fd << " events is " << tep.events;
   if (epoll_ctl(epfd_, EPOLL_CTL_MOD, tep.data.fd, &tep) < 0)
     ERROR << "error epoll_ctl";
 }
@@ -59,6 +61,7 @@ void Epoller::DelEvent(std::shared_ptr<VariantEventBase> event_base) {
         tep.events = e.GetEvents();
         tep.data.fd = e.GetFd();
       });
+  DEBUG << "fd is " << tep.data.fd << " events is " << tep.events;
   if (epoll_ctl(epfd_, EPOLL_CTL_DEL, tep.data.fd, &tep) < 0)
     ERROR << "error epoll_ctl";
   fd_to_events_.erase(tep.data.fd);
@@ -70,17 +73,10 @@ std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
   std::vector<std::shared_ptr<VariantEventBase>> ret_events;
   if (count) DEBUG << "epoll_wait count is " << count;
   for (int id = 0; id < count; id++) {
-    auto eventbase =
-        fd_to_events_[(events_ + id * sizeof(epoll_event))->data.fd];
-    std::cout << "fd is " << (events_ + id * sizeof(epoll_event))->data.fd
-              << std::endl;
+    auto eventbase = fd_to_events_[(events_ + id)->data.fd];
     eventbase->Visit(
-        [&](EventBase<Event> &e) {
-          e.SetRevents((events_ + id * sizeof(epoll_event))->events);
-        },
-        [&](EventBase<TimeEvent> &e) {
-          e.SetRevents((events_ + id * sizeof(epoll_event))->events);
-        });
+        [&](EventBase<Event> &e) { e.SetRevents((events_ + id)->events); },
+        [&](EventBase<TimeEvent> &e) { e.SetRevents((events_ + id)->events); });
     ret_events.push_back(eventbase);
   }
   return ret_events;

@@ -236,7 +236,7 @@ inline void Looper<T>::ModEvent(std::shared_ptr<VariantEventBase> e) {
 
 template <typename T>
 inline void Looper<T>::DelEvent(std::shared_ptr<VariantEventBase> e) {
-  epoller_->ModEvent(e);
+  epoller_->DelEvent(e);
 }
 
 template <typename T>
@@ -333,10 +333,16 @@ inline void Looper<T>::Loop() {
 
   while (!quit_) {
     std::vector<std::shared_ptr<VariantEventBase>> ret = epoller_->PollWait();
+    DEBUG << "start ";
     for (auto &elem : ret) {
-      elem->Visit([](EventBase<Event> &e) { e.HandleEvent(); },
-                  [](EventBase<TimeEvent> &e) { e.HandleEvent(); });
+      elem->Visit(
+          [&](EventBase<Event> &e) {
+            DEBUG << e.GetFd();
+            e.HandleEvent();
+          },
+          [](EventBase<TimeEvent> &e) { e.HandleEvent(); });
     }
+    DEBUG << "end ";
     if (loop_start_) ExecTask();
   }
 }

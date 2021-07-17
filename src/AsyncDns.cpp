@@ -8,6 +8,7 @@ extern "C" {
 
 #include <cstring>
 #include <functional>
+#include <memory>
 #include <random>
 #include <vector>
 
@@ -77,11 +78,13 @@ void AsyncDns::Loop() {
 }
 
 void AsyncDns::AddDnsQuery(int fd, std::string &domain) {
-  queue_domain_->Push(make_unique<DnsMessage>(fd, domain.size(), domain));
+  queue_domain_->Push(
+      std::unique_ptr<DnsMessage>(new DnsMessage(fd, domain.size(), domain)));
 }
 
 void AsyncDns::AddDnsQuery(int fd, const char *domain) {
-  queue_domain_->Push(make_unique<DnsMessage>(fd, strlen(domain), domain));
+  queue_domain_->Push(
+      std::unique_ptr<DnsMessage>(new DnsMessage(fd, strlen(domain), domain)));
 }
 
 std::string AsyncDns::GetIp(std::string domain) {
