@@ -155,7 +155,7 @@ class Variant {
   void Visit(F &&f) {
 #ifdef __clang__
     using V = typename function_traits<F>::template arg<0>::type;
-#elif _MSC_VER
+#else
     using V = typename function_traits<F>::arg<0>::type;
 #endif
     if (Is<V>()) f(Get<V>());
@@ -165,7 +165,7 @@ class Variant {
   void Visit(F &&f, R &&...rest) {
 #ifdef __clang__
     using V = typename function_traits<F>::template arg<0>::type;
-#elif _MSC_VER
+#else
     using V = typename function_traits<F>::arg<0>::type;
 #endif
     if (Is<V>())
