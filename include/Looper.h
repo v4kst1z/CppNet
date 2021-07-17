@@ -333,12 +333,10 @@ inline void Looper<T>::Loop() {
 
   while (!quit_) {
     std::vector<std::shared_ptr<VariantEventBase>> ret = epoller_->PollWait();
-    DEBUG << "start ";
     for (auto &elem : ret) {
       elem->Visit([](EventBase<Event> &e) { e.HandleEvent(); },
                   [](EventBase<TimeEvent> &e) { e.HandleEvent(); });
     }
-    DEBUG << "end ";
     if (loop_start_) ExecTask();
   }
 }
