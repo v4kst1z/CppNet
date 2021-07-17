@@ -15,6 +15,8 @@ set (CMAKE_CXX_FLAGS_DEBUG "-W -g")
 #set (CMAKE_CXX_FLAGS_RELEASE)
 set (CMAKE_CXX_STANDARD 11)
 
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 find_package(Threads)
 include_directories(include)
