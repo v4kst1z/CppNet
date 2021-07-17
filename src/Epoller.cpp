@@ -65,16 +65,15 @@ void Epoller::DelEvent(std::shared_ptr<VariantEventBase> event_base) {
 }
 
 std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
-  int count = 0;
-  //do {
-    count = epoll_wait(epfd_, events_, events_num_, time_out_);
-  //} while (count < 0 && errno == EINTR);
+  int count = epoll_wait(epfd_, events_, events_num_, time_out_);
   if (count < 0) ERROR << "error epoll_wait " << errno;
   std::vector<std::shared_ptr<VariantEventBase>> ret_events;
   if (count) DEBUG << "epoll_wait count is " << count;
   for (int id = 0; id < count; id++) {
-    std::shared_ptr<VariantEventBase> eventbase =
+    auto eventbase =
         fd_to_events_[(events_ + id * sizeof(epoll_event))->data.fd];
+    std::cout << "fd is " << (events_ + id * sizeof(epoll_event))->data.fd
+              << std::endl;
     eventbase->Visit(
         [&](EventBase<Event> &e) {
           e.SetRevents((events_ + id * sizeof(epoll_event))->events);

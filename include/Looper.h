@@ -215,7 +215,7 @@ inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
   fd.EnableReadEvents(true);
   fd.SetReadCallback(
       std::bind(&TimerManager::HandelTimeout, timer_manager_.get(), timer_fd_));
-  timer_event_ = std::make_shared<VariantEventBase>(VariantEventBase(fd));
+  timer_event_ = std::make_shared<VariantEventBase>(fd);
   epoller_->AddEvent(timer_event_);
 }
 
@@ -273,9 +273,7 @@ Looper<T>::InitServer() {
   SetAcceptNewConnection();
   accptor_->Listen();
 
-  std::shared_ptr<VariantEventBase> tmp =
-      std::make_shared<VariantEventBase>(accptor_->GetEvent());
-  epoller_->AddEvent(tmp);
+  epoller_->AddEvent(std::make_shared<VariantEventBase>(accptor_->GetEvent()));
 }
 
 template <typename T>
@@ -310,9 +308,8 @@ Looper<T>::InitServer() {
       }
     }
   });
-  std::shared_ptr<VariantEventBase> tmp =
-      std::make_shared<VariantEventBase>(fd);
-  epoller_->AddEvent(tmp);
+
+  epoller_->AddEvent(std::make_shared<VariantEventBase>(fd));
 }
 
 template <typename T>

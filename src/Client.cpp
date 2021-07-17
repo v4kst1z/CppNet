@@ -62,19 +62,17 @@ void Client::Connect() {
         conn->SetMessageCallBack(message_callback_);
 
         conn->RunNewConnCallBack();
-        looper_->GetEventPtr(conn->GetConnFd())
-            ->Visit([](EventBase<Event> &conn_event_) {
-              conn_event_.EnableWriteEvents(false);
-            });
+        auto event = looper_->GetEventPtr(conn->GetConnFd());
+        event->Visit([](EventBase<Event> &conn_event_) {
+          conn_event_.EnableWriteEvents(false);
+        });
 
         if (!looper_->GetLoopStartValue()) {
           looper_->SetLoopStartValue(true);
           looper_->ExecTask();
         }
       });
-  std::shared_ptr<VariantEventBase> tmp =
-      std::make_shared<VariantEventBase>(conn_->GetEvent());
-  looper_->AddEvent(tmp);
+  looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
 }
 
 void Client::SendData(const void *data, size_t len) {

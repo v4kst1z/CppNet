@@ -132,7 +132,8 @@ void TcpConnection::SendData(const void *data, size_t len) {
   if (output_buffer.GetReadAblePtr() != data &&
       output_buffer.GetReadAbleSize()) {
     output_buffer.AppendData(static_cast<const char *>(data), len);
-    looper_->GetEventPtr(conn_fd_)->Visit([](EventBase<Event> &conn_event_) {
+    auto event = looper_->GetEventPtr(conn_fd_);
+    event->Visit([](EventBase<Event> &conn_event_) {
       conn_event_.EnableWriteEvents(true);
     });
 
@@ -147,11 +148,12 @@ void TcpConnection::SendData(const void *data, size_t len) {
       send_data_len += write_len;
       if (len == send_data_len) {
         //发送完成
-        looper_->GetEventPtr(conn_fd_)->Visit([](EventBase<Event> &conn_event) {
+        auto event = looper_->GetEventPtr(conn_fd_);
+        event->Visit([](EventBase<Event> &conn_event) {
           conn_event.EnableWriteEvents(false);
         });
 
-        looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
+        looper_->ModEvent(event);
         RunSendDataCallBack();
         output_buffer.ResetId();
         break;
@@ -160,12 +162,12 @@ void TcpConnection::SendData(const void *data, size_t len) {
       if (errno == EAGAIN) {  // 没有数据可读
         output_buffer.AppendData((const char *)data + send_data_len,
                                  len - send_data_len);
-        looper_->GetEventPtr(conn_fd_)->Visit(
-            [](EventBase<Event> &conn_event_) {
-              conn_event_.EnableWriteEvents(true);
-            });
+        auto event = looper_->GetEventPtr(conn_fd_);
+        event->Visit([](EventBase<Event> &conn_event_) {
+          conn_event_.EnableWriteEvents(true);
+        });
 
-        looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
+        looper_->ModEvent(event);
         break;
       } else if (errno == EINTR) {  // 操作被中断
         continue;
