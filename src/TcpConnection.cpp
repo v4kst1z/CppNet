@@ -94,10 +94,7 @@ void TcpConnection::OnRead() {
         ERROR << "read error callback " << errno;
         break;
       }
-    } else {
-      OnClose();
-      return;
-    }
+    } 
   }
   RunMessageCallBack();
 }
