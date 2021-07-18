@@ -10,7 +10,8 @@
 #include "../include/Socket.h"
 #include "../include/TcpConnection.h"
 
-Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr)
+Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
+               bool log)
     : quit_(false),
       addr_(addr),
       looper_(looper),
@@ -20,7 +21,7 @@ Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr)
   conn_->GetEvent().EnableWriteEvents(true);
   looper_->InsertConn(conn_fd_, conn_);
   looper_->SetLoopId(std::this_thread::get_id());
-  log_.Start();
+  if (log) log_.Start();
 }
 
 void Client::SetNewConnCallback(TcpConnection::CallBack &&cb) {
