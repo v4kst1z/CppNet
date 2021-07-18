@@ -94,7 +94,10 @@ void TcpConnection::OnRead() {
         ERROR << "read error callback " << errno;
         break;
       }
-    } 
+    } else {
+      OnClose();
+      return;
+    }
   }
   RunMessageCallBack();
 }
@@ -175,10 +178,7 @@ void TcpConnection::SendData(const void *data, size_t len) {
       } else {
         ERROR << "write error callback " << errno;
       }
-    } else {
-      OnClose();
-      break;
-    }
+    } 
   }
 }
 
