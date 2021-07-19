@@ -15,7 +15,7 @@ class Looper;
 class Client {
  public:
   Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
-         bool log = true);
+         bool log = true, bool async = false);
 
   void Connect();
 
