@@ -18,7 +18,7 @@ TcpConnection::TcpConnection(int conn_fd, BaseLooper *looper,
       looper_(looper),
       perr_addr_(addr),
       half_close_(false),
-      conn_event_(EventBase<Event>(conn_fd)) {
+      conn_event_(Event(conn_fd)) {
   conn_event_.SetReadCallback(std::bind(&TcpConnection::OnRead, this));
   conn_event_.SetWriteCallback(std::bind(&TcpConnection::OnWrite, this));
   conn_event_.SetCloseCallback(std::bind(&TcpConnection::OnClose, this));
@@ -178,7 +178,7 @@ void TcpConnection::SendData(const void *data, size_t len) {
       } else {
         ERROR << "write error callback " << errno;
       }
-    } 
+    }
   }
 }
 

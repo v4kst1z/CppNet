@@ -37,7 +37,7 @@ class Server {
 
   void Exit();
 
-  ~Server();
+  virtual ~Server();
 
   DISALLOW_COPY_AND_ASSIGN(Server);
 

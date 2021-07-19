@@ -11,7 +11,7 @@ Acceptor::Acceptor(Ipv4Addr *addr, Looper<TcpConnection> *looper)
     : listen_addr_(addr),
       looper_(looper),
       accept_fd_(sockets::CreateNonblockAndCloexecTcpSocket()),
-      accept_event_(EventBase<Event>(accept_fd_)) {
+      accept_event_(Event(accept_fd_)) {
   sockets::SetReuseAddr(accept_fd_);
   sockets::SetReusePort(accept_fd_);
   sockets::Bind(accept_fd_, listen_addr_);

@@ -178,7 +178,7 @@ inline Looper<T>::Looper(Ipv4Addr *addr)
       net_addr_(addr),
       wakeup_fd_(CreateEventFd()),
       loop_flag(LOOPFLAG::NONE) {
-  EventBase<Event> fd = EventBase<Event>(wakeup_fd_);
+  EventBase<Event> fd = Event(wakeup_fd_);
   fd.EnableReadEvents(true);
   fd.SetReadCallback([this]() {
     uint64_t num = 1;
@@ -200,7 +200,7 @@ inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
       wakeup_fd_(CreateEventFd()),
       loop_flag(LOOPFLAG::NONE),
       timer_fd_(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC)) {
-  EventBase<Event> event_fd = EventBase<Event>(wakeup_fd_);
+  EventBase<Event> event_fd = Event(wakeup_fd_);
   event_fd.EnableReadEvents(true);
   event_fd.SetReadCallback([this]() {
     uint64_t num = 1;
@@ -210,7 +210,7 @@ inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
   });
   epoller_->AddEvent(std::make_shared<VariantEventBase>(event_fd));
 
-  EventBase<TimeEvent> fd = EventBase<TimeEvent>(timer_fd_);
+  EventBase<TimeEvent> fd = TimeEvent(timer_fd_);
   timer_manager_->SetFdFlag(timer_fd_);
   fd.EnableReadEvents(true);
   fd.SetReadCallback(
@@ -286,7 +286,7 @@ Looper<T>::InitServer() {
   sockets::SetReusePort(server_fd_);
   sockets::Bind(server_fd_, net_addr_);
 
-  EventBase<Event> fd = EventBase<Event>(server_fd_);
+  EventBase<Event> fd = Event(server_fd_);
   fd.EnableReadEvents(true);
   fd.SetReadCallback([this]() {
     std::vector<std::shared_ptr<UdpConnection>> bak;
