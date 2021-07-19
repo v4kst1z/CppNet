@@ -52,8 +52,6 @@ void Client::SetErrorCallBack(TcpConnection::CallBack &&cb) {
 void Client::LoopStart() { looper_->Loop(); }
 
 void Client::Connect() {
-  sockets::Connect(conn_fd_, addr_.get());
-
   conn_->SetMessageCallBack(
       [&](const std::shared_ptr<TcpConnection> &conn, IOBuffer &) {
         conn->SetNewConnCallback(new_conn_callback_);
@@ -74,6 +72,7 @@ void Client::Connect() {
         }
       });
   looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
+  sockets::Connect(conn_fd_, addr_.get());
 }
 
 void Client::SendData(const void *data, size_t len) {
