@@ -59,6 +59,9 @@ class EventBase {
   short revents_;
 
   EventCallback read_cb_;
+  EventCallback write_cb_;
+  EventCallback error_cb_;
+  EventCallback close_cb_;
 };
 
 template <typename T>
@@ -109,6 +112,9 @@ class EventBase<T, true> {
   short revents_;
 
   EventCallback read_cb_;
+  EventCallback write_cb_;
+  EventCallback error_cb_;
+  EventCallback close_cb_;
 };
 
 using VariantEventBase = Variant<EventBase<TimeEvent>, EventBase<Event>>;
@@ -153,11 +159,6 @@ class Event : public EventBase<Event> {
   }
 
   ~Event() {}
-
- private:
-  EventCallback write_cb_;
-  EventCallback error_cb_;
-  EventCallback close_cb_;
 };
 
 #endif  // CPPNET_NET_EVENT_H
