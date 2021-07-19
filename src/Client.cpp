@@ -11,7 +11,7 @@
 #include "../include/TcpConnection.h"
 
 Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
-               bool log)
+               bool log, bool async)
     : quit_(false),
       addr_(addr),
       looper_(looper),
@@ -20,7 +20,7 @@ Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
       conn_(std::make_shared<TcpConnection>(conn_fd_, looper_, addr_)) {
   conn_->GetEvent().EnableWriteEvents(true);
   looper_->InsertConn(conn_fd_, conn_);
-  looper_->SetLoopId(std::this_thread::get_id());
+  if (!async) looper_->SetLoopId(std::this_thread::get_id());
   if (log) log_.Start();
 }
 
