@@ -54,7 +54,8 @@ void AsyncDns::StartLoop() { dns_thread_ = std::thread(&AsyncDns::Loop, this); }
 
 void AsyncDns::Loop() {
   looper_->Start();
-  sockets::Connect(dns_socket_, dns_server_addr_.get());
+  int error = 0;
+  sockets::Connect(dns_socket_, dns_server_addr_.get(), error);
   EventBase<Event> fd = Event(dns_socket_);
   fd.EnableReadEvents(true);
   fd.SetReadCallback([this]() {

@@ -43,7 +43,8 @@ void SetReusePort(int socket_fd);
 
 int Accept(int socket_fd, Ipv4Addr *addr);
 
-int Connect(int sockfd, Ipv4Addr *addr);
+int Connect(int sockfd, Ipv4Addr *addr, int &err);
+
 void SendTo(int server_fd, Ipv4Addr *peer, const char *data, int len);
 
 int RecvFrom(int server_fd, std::shared_ptr<UdpConnection> conn, int &error);

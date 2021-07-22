@@ -107,11 +107,12 @@ int Accept(int socket_fd, Ipv4Addr *addr) {
   return conn_fd;
 }
 
-int Connect(int sockfd, Ipv4Addr *addr) {
+int Connect(int sockfd, Ipv4Addr *addr, int &err) {
   struct sockaddr_in *server_addr = addr->GetAddr();
   socklen_t addrlen = sizeof(*server_addr);
   int ret = connect(sockfd, (struct sockaddr *)server_addr, addrlen);
   if (ret < 0 && errno != EINPROGRESS) ERROR << "connect failed!" << errno;
+  err = errno;
   return ret;
 }
 

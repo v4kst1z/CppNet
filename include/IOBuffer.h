@@ -26,6 +26,9 @@ class IOBuffer {
   void AppendData(const char *data, size_t len);
   void Append(const std::string &str);
 
+  void AddReadIdx(size_t);
+  void AddWriteIdx(size_t);
+
   void ResetId();
 
   ~IOBuffer() = default;

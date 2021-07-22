@@ -4,6 +4,7 @@
 
 #include "../include/Client.h"
 
+#include <cstring>
 #include <memory>
 
 #include "../include/Looper.h"
@@ -12,13 +13,13 @@
 
 Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
                bool log, bool async)
-    : quit_(false),
+    : connect_(false),
       addr_(addr),
       looper_(looper),
       log_(Logger::GetInstance()),
       conn_fd_(sockets::CreateNonblockAndCloexecTcpSocket()),
-      conn_(std::make_shared<TcpConnection>(conn_fd_, looper_, addr_)) {
-  conn_->GetEvent().EnableWriteEvents(true);
+      conn_(std::make_shared<TcpConnection>(
+          conn_fd_, dynamic_cast<BaseLooper *>(looper_), addr_)) {
   looper_->InsertConn(conn_fd_, conn_);
   if (!async) looper_->SetLoopId(std::this_thread::get_id());
   if (log) log_.Start();
@@ -52,45 +53,102 @@ void Client::SetErrorCallBack(TcpConnection::CallBack &&cb) {
 void Client::LoopStart() { looper_->Loop(); }
 
 void Client::Connect() {
-  conn_->SetMessageCallBack(
-      [&](const std::shared_ptr<TcpConnection> &conn, IOBuffer &) {
-        conn->SetNewConnCallback(new_conn_callback_);
-        conn->SetCloseCallBack(close_callback_);
-        conn->SetErrorCallBack(error_callback_);
-        conn->SetSendDataCallBack(send_data_callback_);
-        conn->SetMessageCallBack(message_callback_);
+  int error = 0;
+  int ret = sockets::Connect(conn_fd_, addr_.get(), error);
+  DEBUG << "connect to " << addr_->GetIp() << ":" << addr_->GetPort();
+  if (ret < 0) {
+    if (error == EINPROGRESS) {
+      conn_->SetMessageCallBack(
+          [this](const std::shared_ptr<TcpConnection> &conn, IOBuffer &) {
+            int result;
+            socklen_t result_len = sizeof(result);
+            if (getsockopt(conn->GetConnFd(), SOL_SOCKET, SO_ERROR, &result,
+                           &result_len) < 0) {
+              DEBUG << "getsockopt error ~";
+              return;
+            }
 
-        conn->RunNewConnCallBack();
-        auto event = looper_->GetEventPtr(conn->GetConnFd());
-        event->Visit([](EventBase<Event> &conn_event_) {
-          conn_event_.EnableWriteEvents(false);
-        });
+            if (result != 0) {
+              DEBUG << "Connect error ~ " << result;
+              return;
+            }
 
-        if (!looper_->GetLoopStartValue()) {
-          looper_->SetLoopStartValue(true);
-          looper_->ExecTask();
-        }
-      });
-  looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
-  sockets::Connect(conn_fd_, addr_.get());
+            conn->SetNewConnCallback(new_conn_callback_);
+            conn->SetCloseCallBack(close_callback_);
+            conn->SetErrorCallBack(error_callback_);
+            conn->SetSendDataCallBack(send_data_callback_);
+            conn->SetMessageCallBack(message_callback_);
+
+            connect_ = true;
+            looper_->AddTasks(tasks_);
+            conn->RunNewConnCallBack();
+            conn->EnableWrite(false);
+          });
+
+      conn_->GetEvent().EnableWriteEvents(true);
+      looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
+    }
+  } else if (ret == 0) {
+    conn_->SetNewConnCallback(new_conn_callback_);
+    conn_->SetCloseCallBack(close_callback_);
+    conn_->SetErrorCallBack(error_callback_);
+    conn_->SetSendDataCallBack(send_data_callback_);
+    conn_->SetMessageCallBack(message_callback_);
+
+    connect_ = true;
+    conn_->RunNewConnCallBack();
+  }
 }
 
-void Client::SendData(const void *data, size_t len) {
-  looper_->AddTask(
-      std::bind(static_cast<void (TcpConnection::*)(const void *, size_t)>(
-                    &TcpConnection::SendData),
-                conn_, data, len));
+void Client::SendData(const void *data, size_t len, bool del) {
+  void *buff;
+  if (!del) {
+    buff = malloc(len);
+    memcpy(buff, const_cast<void *>(data), len);
+  } else {
+    buff = const_cast<void *>(data);
+  }
+
+  if (!connect_) {
+    tasks_.push_back([&]() { conn_->SendData(buff, len, true); });
+  } else {
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
+  }
 }
 
 void Client::SendData(const std::string &message) {
-  looper_->AddTask(
-      std::bind(static_cast<void (TcpConnection::*)(const std::string &)>(
-                    &TcpConnection::SendData),
-                conn_, message));
+  int len = message.size();
+  char *buff = (char *)malloc(len);
+  memcpy(buff, const_cast<char *>(message.data()), len);
+  if (!connect_) {
+    tasks_.push_back(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
+  } else {
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
+  }
 }
 
 void Client::SendData(IOBuffer *buffer) {
-  looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(IOBuffer *)>(
-                                 &TcpConnection::SendData),
-                             conn_, buffer));
+  int len = buffer->GetReadAbleSize();
+  char *buff = (char *)malloc(len);
+  memcpy(buff, buffer->GetReadAblePtr(), len);
+  if (!connect_) {
+    tasks_.push_back(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
+  } else {
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
+  }
 }

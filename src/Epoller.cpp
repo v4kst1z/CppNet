@@ -73,6 +73,7 @@ std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
   std::vector<std::shared_ptr<VariantEventBase>> ret_events;
   if (count) DEBUG << "epoll_wait count is " << count;
   for (int id = 0; id < count; id++) {
+    DEBUG << (events_ + id)->data.fd << " " << count;
     auto eventbase = fd_to_events_[(events_ + id)->data.fd];
     eventbase->Visit(
         [&](EventBase<Event> &e) { e.SetRevents((events_ + id)->events); },

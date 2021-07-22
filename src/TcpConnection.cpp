@@ -17,7 +17,6 @@ TcpConnection::TcpConnection(int conn_fd, BaseLooper *looper,
     : conn_fd_(conn_fd),
       looper_(looper),
       perr_addr_(addr),
-      half_close_(false),
       conn_event_(Event(conn_fd)) {
   conn_event_.SetReadCallback(std::bind(&TcpConnection::OnRead, this));
   conn_event_.SetWriteCallback(std::bind(&TcpConnection::OnWrite, this));
@@ -102,7 +101,9 @@ void TcpConnection::OnRead() {
   RunMessageCallBack();
 }
 
-void TcpConnection::OnWrite() { SendData(&output_buffer); }
+void TcpConnection::OnWrite() {
+  SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
+}
 
 void TcpConnection::OnClose() {
   if (input_buffer_.GetReadAbleSize() || output_buffer.GetReadAbleSize()) {
@@ -118,12 +119,22 @@ void TcpConnection::OnClose() {
   looper_->EraseConn(conn_fd_);
 }
 
-void TcpConnection::SendData(const void *data, size_t len) {
+void TcpConnection::SendData(const void *data, size_t len, bool del) {
+  // 1. data 是栈上临时数据 del = false
+  // 2. data 是堆上数据 del = true
+  // 3. data 是 io buffer 中的数据 del = false
   if (looper_->GetThreadId() != std::this_thread::get_id()) {
-    looper_->AddTask(
-        std::bind(static_cast<void (TcpConnection::*)(const void *, size_t)>(
-                      &TcpConnection::SendData),
-                  shared_from_this(), data, len));
+    void *buff;
+    if (!del) {
+      buff = malloc(len);
+      memcpy(buff, data, len);
+    } else {
+      buff = const_cast<void *>(data);
+    }
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        shared_from_this(), buff, len, true));
     return;
   }
 
@@ -131,13 +142,10 @@ void TcpConnection::SendData(const void *data, size_t len) {
 
   if (output_buffer.GetReadAblePtr() != data &&
       output_buffer.GetReadAbleSize()) {
+    //非 io buffer 数据 压入 io buffer
     output_buffer.AppendData(static_cast<const char *>(data), len);
-    auto event = looper_->GetEventPtr(conn_fd_);
-    event->Visit([](EventBase<Event> &conn_event_) {
-      conn_event_.EnableWriteEvents(true);
-    });
-
-    looper_->ModEvent(looper_->GetEventPtr(conn_fd_));
+    if (del) free(const_cast<void *>(data));
+    EnableWrite(true);
     return;
   }
 
@@ -148,12 +156,7 @@ void TcpConnection::SendData(const void *data, size_t len) {
       send_data_len += write_len;
       if (len == send_data_len) {
         //发送完成
-        auto event = looper_->GetEventPtr(conn_fd_);
-        event->Visit([](EventBase<Event> &conn_event) {
-          conn_event.EnableWriteEvents(false);
-        });
-
-        looper_->ModEvent(event);
+        EnableWrite(false);
         RunSendDataCallBack();
         output_buffer.ResetId();
         break;
@@ -162,12 +165,7 @@ void TcpConnection::SendData(const void *data, size_t len) {
       if (errno == EAGAIN) {  // 没有数据可读
         output_buffer.AppendData((const char *)data + send_data_len,
                                  len - send_data_len);
-        auto event = looper_->GetEventPtr(conn_fd_);
-        event->Visit([](EventBase<Event> &conn_event_) {
-          conn_event_.EnableWriteEvents(true);
-        });
-
-        looper_->ModEvent(event);
+        EnableWrite(true);
         break;
       } else if (errno == EINTR) {  // 操作被中断
         continue;
@@ -180,35 +178,56 @@ void TcpConnection::SendData(const void *data, size_t len) {
       }
     }
   }
+  if (del) free(const_cast<void *>(data));
 }
 
 void TcpConnection::SendData(const std::string &message) {
   if (looper_->GetThreadId() != std::this_thread::get_id()) {
-    looper_->AddTask(
-        std::bind(static_cast<void (TcpConnection::*)(const std::string &)>(
-                      &TcpConnection::SendData),
-                  shared_from_this(), message));
+    int len = message.size();
+    char *buff = (char *)malloc(len);
+    memcpy(buff, message.data(), len);
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        shared_from_this(), buff, len, true));
     return;
   }
-
+  SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
   if (output_buffer.GetReadAbleSize()) {
     output_buffer.AppendData(static_cast<const char *>(message.data()),
                              message.size());
-    SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
     return;
   }
   SendData(message.data(), message.size());
 }
 
 void TcpConnection::SendData(IOBuffer *buffer) {
+  int len = buffer->GetReadAbleSize();
   if (looper_->GetThreadId() != std::this_thread::get_id()) {
-    looper_->AddTask(std::bind(static_cast<void (TcpConnection::*)(IOBuffer *)>(
-                                   &TcpConnection::SendData),
-                               shared_from_this(), buffer));
+    char *buff = (char *)malloc(len);
+    memcpy(buff, buffer->GetReadAblePtr(), len);
+    looper_->AddTask(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        shared_from_this(), buff, len, true));
+    buffer->ResetId();
     return;
   }
+  if (output_buffer.GetReadAbleSize()) {
+    output_buffer.AppendData(buffer->GetReadAblePtr(), len);
+    buffer->ResetId();
+    return;
+  }
+  SendData(output_buffer.GetReadAblePtr(), output_buffer.GetReadAbleSize());
+}
 
-  SendData(buffer->GetReadAblePtr(), buffer->GetReadAbleSize());
+void TcpConnection::EnableWrite(bool flag) {
+  auto event = looper_->GetEventPtr(conn_fd_);
+  event->Visit([flag](EventBase<Event> &conn_event) {
+    conn_event.EnableWriteEvents(flag);
+  });
+
+  looper_->ModEvent(event);
 }
 
 EventBase<Event> &TcpConnection::GetEvent() { return conn_event_; }

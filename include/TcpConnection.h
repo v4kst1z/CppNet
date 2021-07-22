@@ -41,9 +41,11 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 
   ThreadPool *GetThreadPoolPtr();
 
-  void SendData(const void *data, size_t len);
+  void SendData(const void *data, size_t len, bool del = false);
   void SendData(const std::string &message);
   void SendData(IOBuffer *buffer);
+
+  void EnableWrite(bool);
 
   int GetConnFd();
   EventBase<Event> &GetEvent();
@@ -55,7 +57,6 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
 
  private:
   int conn_fd_;
-  bool half_close_;
   BaseLooper *looper_;
   std::shared_ptr<Ipv4Addr> perr_addr_;
   EventBase<Event> conn_event_;

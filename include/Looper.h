@@ -64,6 +64,8 @@ class BaseLooper {
 
   virtual void AddTask(WorkFunction task) { return; }
 
+  virtual void AddTasks(std::vector<WorkFunction> &task) { return; }
+
   virtual int GetServerFd() { return 0; }
 
   virtual void SetServerFd(int) { return; }
@@ -84,8 +86,13 @@ class Looper final : public BaseLooper {
   void Start();
   void Loop();
   void Stop();
+
   void WakeUpLoop();
+
   void AddTask(WorkFunction task) override;
+
+  void AddTasks(std::vector<WorkFunction> &task) override;
+
   void ExecTask();
 
   void SetAcceptNewConnection();
@@ -108,9 +115,6 @@ class Looper final : public BaseLooper {
 
   void SetLoopId(std::thread::id loop_id);
   std::thread::id GetLoopId();
-
-  bool GetLoopStartValue();
-  void SetLoopStartValue(bool);
 
   void AddTimer(int timeout, std::function<void()> fun);
 
@@ -140,7 +144,6 @@ class Looper final : public BaseLooper {
 
   int timer_fd_;
   bool quit_;
-  bool loop_start_;
   int wakeup_fd_;
   LOOPFLAG loop_flag;
   std::unique_ptr<Epoller> epoller_;
@@ -173,7 +176,6 @@ inline int CreateEventFd() {
 template <typename T>
 inline Looper<T>::Looper(Ipv4Addr *addr)
     : quit_(false),
-      loop_start_(false),
       epoller_(new Epoller()),
       net_addr_(addr),
       wakeup_fd_(CreateEventFd()),
@@ -193,7 +195,6 @@ template <typename T>
 inline Looper<T>::Looper(std::shared_ptr<TimerManager> timer_manager,
                          Ipv4Addr *addr)
     : quit_(false),
-      loop_start_(false),
       epoller_(new Epoller()),
       timer_manager_(timer_manager),
       net_addr_(addr),
@@ -268,7 +269,6 @@ template <typename T>
 template <typename U>
 typename std::enable_if<std::is_same<U, TcpConnection>::value, void>::type
 Looper<T>::InitServer() {
-  loop_start_ = true;
   accptor_ = new Acceptor(net_addr_, this);
   SetAcceptNewConnection();
   accptor_->Listen();
@@ -280,7 +280,6 @@ template <typename T>
 template <typename U>
 typename std::enable_if<std::is_same<U, UdpConnection>::value, void>::type
 Looper<T>::InitServer() {
-  loop_start_ = true;
   server_fd_ = sockets::CreateNonblockAndCloexecUdpSocket();
   sockets::SetReuseAddr(server_fd_);
   sockets::SetReusePort(server_fd_);
@@ -322,9 +321,7 @@ inline void Looper<T>::Loop() {
       InitServer();
       break;
     case LOOPFLAG::CLIENT:
-      break;
     case LOOPFLAG::UDPCLIENT:
-      loop_start_ = true;
       break;
     default:
       DEBUG << "Please Set loop flag!";
@@ -337,7 +334,7 @@ inline void Looper<T>::Loop() {
       elem->Visit([](EventBase<Event> &e) { e.HandleEvent(); },
                   [](EventBase<TimeEvent> &e) { e.HandleEvent(); });
     }
-    if (loop_start_) ExecTask();
+    ExecTask();
   }
 }
 
@@ -396,13 +393,11 @@ inline void Looper<T>::AddTask(WorkFunction task) {
     std::lock_guard<std::mutex> lck(mtx_);
     task_.push_back(task);
   }
-  if (!loop_start_) return;
   WakeUpLoop();
 }
 
 template <typename T>
 inline void Looper<T>::ExecTask() {
-  if (!loop_start_) return;
   std::vector<WorkFunction> tsk;
   {
     std::lock_guard<std::mutex> lck(mtx_);
@@ -447,16 +442,6 @@ inline std::thread::id Looper<T>::GetLoopId() {
 }
 
 template <typename T>
-inline bool Looper<T>::GetLoopStartValue() {
-  return loop_start_;
-}
-
-template <typename T>
-inline void Looper<T>::SetLoopStartValue(bool val) {
-  loop_start_ = val;
-}
-
-template <typename T>
 inline void Looper<T>::AddTimer(int timeout, std::function<void()> fun) {
   timer_manager_->AddTimer(timeout, fun);
 }
@@ -464,6 +449,16 @@ inline void Looper<T>::AddTimer(int timeout, std::function<void()> fun) {
 template <typename T>
 void Looper<T>::SetServerFd(int fd) {
   server_fd_ = fd;
+}
+
+template <typename T>
+void Looper<T>::AddTasks(std::vector<WorkFunction> &task) {
+  {
+    std::lock_guard<std::mutex> lck(mtx_);
+    task_.insert(task_.end(), task.begin(), task.end());
+  }
+
+  WakeUpLoop();
 }
 
 #endif  // CPPNET_NET_LOOPER_H

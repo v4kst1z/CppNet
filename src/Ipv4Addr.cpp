@@ -42,12 +42,14 @@ Ipv4Addr::Ipv4Addr(const char *addr, unsigned short port)
     struct hostent *he;
     char ip_str[INET_ADDRSTRLEN];
 
-    if ((he = gethostbyname(addr_str_.c_str())) == NULL)
-      ERROR << "gethostbyname failed";
+    if ((he = gethostbyname(addr_str_.c_str())) == NULL) {
+      ERROR << "gethostbyname failed " << addr_str_;
+      return;
+    }
 
     memcpy(&addr_.sin_addr, he->h_addr_list[0], he->h_length);
+
     inet_ntop(AF_INET, he->h_addr_list[0], ip_str, INET_ADDRSTRLEN);
-    addr_str_ = ip_str;
   }
 }
 

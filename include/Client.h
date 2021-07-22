@@ -25,7 +25,7 @@ class Client {
   void SetSendDataCallBack(TcpConnection::CallBack &&cb);
   void SetErrorCallBack(TcpConnection::CallBack &&cb);
 
-  void SendData(const void *data, size_t len);
+  void SendData(const void *data, size_t len, bool del = false);
   void SendData(const std::string &message);
   void SendData(IOBuffer *buffer);
 
@@ -36,12 +36,13 @@ class Client {
   DISALLOW_COPY_AND_ASSIGN(Client);
 
  private:
-  bool quit_;
+  bool connect_;
   std::shared_ptr<Ipv4Addr> addr_;
   Looper<TcpConnection> *looper_;
   Logger &log_;
   int conn_fd_;
   std::shared_ptr<TcpConnection> conn_;
+  std::vector<std::function<void()>> tasks_;
 
   TcpConnection::CallBack new_conn_callback_;
   TcpConnection::MessageCallBack message_callback_;

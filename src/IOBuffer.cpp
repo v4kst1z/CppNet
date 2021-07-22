@@ -53,6 +53,10 @@ void IOBuffer::Append(const std::string &str) {
   AppendData(str.data(), str.size());
 }
 
+void IOBuffer::AddReadIdx(size_t id) { read_idx_ += id; }
+
+void IOBuffer::AddWriteIdx(size_t id) { write_idx_ += id; }
+
 void IOBuffer::ResetId() {
   read_idx_ = 8;
   write_idx_ = 8;
