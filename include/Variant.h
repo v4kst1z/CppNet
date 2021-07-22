@@ -86,11 +86,9 @@ struct VariantHelper<F, R...> {
 
 template <>
 struct VariantHelper<> {
-  static void Destory(const std::type_index type_id, void *data) {}
-  static void Move(const std::type_index old_type_id, void *old_addr,
-                   void *new_addr) {}
-  static void Copy(const std::type_index old_type_id, void *old_addr,
-                   void *new_addr) {}
+  static void Destory(const std::type_index, void *) {}
+  static void Move(const std::type_index, void *, void *) {}
+  static void Copy(const std::type_index, void *, void *) {}
 };
 
 template <typename... T>

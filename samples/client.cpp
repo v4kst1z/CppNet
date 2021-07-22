@@ -18,7 +18,7 @@ void NewConnectionCB(const std::shared_ptr<TcpConnection> &conn) {
             << std::endl;
 }
 
-void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
+void MessageCB(const std::shared_ptr<TcpConnection> &, IOBuffer &buf) {
   char buff[BUFSIZ];
   memcpy(buff, buf.GetReadAblePtr(), buf.GetReadAbleSize());
   buff[buf.GetReadAbleSize()] = '\x00';

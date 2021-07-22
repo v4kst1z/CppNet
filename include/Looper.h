@@ -56,15 +56,15 @@ class BaseLooper {
 
   virtual void EraseConn(int) { return; }
 
-  virtual void SetTPollPtr(ThreadPool *tpool) { return; }
+  virtual void SetTPollPtr(ThreadPool *) { return; }
 
   virtual ThreadPool *GetTPollPtr() { return nullptr; }
 
   virtual std::thread::id GetThreadId() const { return std::thread::id(); }
 
-  virtual void AddTask(WorkFunction task) { return; }
+  virtual void AddTask(WorkFunction) { return; }
 
-  virtual void AddTasks(std::vector<WorkFunction> &task) { return; }
+  virtual void AddTasks(std::vector<WorkFunction> &) { return; }
 
   virtual int GetServerFd() { return 0; }
 

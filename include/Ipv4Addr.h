@@ -27,11 +27,11 @@ class Ipv4Addr {
     return &addr_;
   }
 
-  const unsigned short GetPort() const { return port_; }
+  unsigned short GetPort() const { return port_; }
 
   void SetPort(unsigned short port) { port_ = port; }
 
-  const std::string GetIp() const { return addr_str_; }
+  std::string GetIp() const { return addr_str_; }
 
   void SetIp(const char *str) { addr_str_ = str; }
 

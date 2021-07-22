@@ -176,7 +176,7 @@ std::string AsyncDns::ParseResponse(std::string &domain) {
   memset(domain_chars, '\x00', 128);
 
   memcpy(domain_chars, buffer + 13, buffer[12]);
-  int id = 0;
+  size_t id = 0;
   for (id = buffer[12 + id] + 1; id < ques->domain_len_; id++) {
     domain_chars[strlen(domain_chars)] = '.';
     int len = buffer[12 + id];

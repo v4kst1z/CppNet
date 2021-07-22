@@ -20,7 +20,7 @@ void MessageCB(const std::shared_ptr<TcpConnection> &conn, IOBuffer &buf) {
     char buff[BUFSIZ];
     memcpy(buff, buf.GetReadAblePtr(), buf.GetReadAbleSize());
     buff[buf.GetReadAbleSize()] = '\x00';
-    for (int id = 0; id < buf.GetReadAbleSize(); id++)
+    for (size_t id = 0; id < buf.GetReadAbleSize(); id++)
       buff[id] = toupper(buff[id]);
     con->SendData(buff, buf.GetReadAbleSize());
   });

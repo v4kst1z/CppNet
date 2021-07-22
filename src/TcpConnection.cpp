@@ -138,7 +138,7 @@ void TcpConnection::SendData(const void *data, size_t len, bool del) {
     return;
   }
 
-  int send_data_len = 0;
+  size_t send_data_len = 0;
 
   if (output_buffer.GetReadAblePtr() != data &&
       output_buffer.GetReadAbleSize()) {

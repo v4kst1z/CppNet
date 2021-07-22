@@ -15,9 +15,9 @@ class IOBuffer {
  public:
   explicit IOBuffer(size_t init_size = 2048, int prepend_size = 8);
 
-  const size_t GetReadAbleSize() const;
-  const size_t GetWriteAbleSize() const;
-  const size_t GetPrependSize() const;
+  size_t GetReadAbleSize() const;
+  size_t GetWriteAbleSize() const;
+  size_t GetPrependSize() const;
 
   const char *GetReadAblePtr() const;
   const char *GetWriteAblePtr() const;
