@@ -107,7 +107,6 @@ class AsyncDns {
   int dns_socket_;
   ConnMap domain_to_conn_;
   Looper<UdpConnection> *looper_;
-  Logger &log_;
   std::unordered_map<std::string, std::string> domain_to_ip_;
   std::unordered_map<std::string, std::vector<int>> domain_to_fd_;
   std::thread dns_thread_;
