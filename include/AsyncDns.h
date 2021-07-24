@@ -11,7 +11,6 @@
 #include "SafeQueue.h"
 #include "UdpConnection.h"
 
-class Logger;
 class UdpConnection;
 
 template <typename T>
