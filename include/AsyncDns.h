@@ -51,12 +51,13 @@ typedef struct Dns {
 
 typedef struct DnsMessage {
  public:
-  DnsMessage(size_t len, std::string domain, std::function<void()> &&task)
+  DnsMessage(size_t len, std::string domain,
+             std::function<void(std::string)> &&task)
       : domain_len_(len), domain_(domain), task_(task) {}
 
   size_t domain_len_;
   std::string domain_;
-  std::function<void()> task_;
+  std::function<void(std::string)> task_;
 } DnsMessage;
 
 typedef struct DnsAnswer {
@@ -86,8 +87,9 @@ class AsyncDns {
   void StartLoop();
   void Loop();
 
-  void AddDnsQuery(std::string &domain, std::function<void()> &&task);
-  void AddDnsQuery(const char *domain, std::function<void()> &&task);
+  void AddDnsQuery(std::string &domain,
+                   std::function<void(std::string)> &&task);
+  void AddDnsQuery(const char *domain, std::function<void(std::string)> &&task);
 
   std::string GetIp(std::string);
 

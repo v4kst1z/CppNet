@@ -55,7 +55,7 @@ void AsyncDns::Loop() {
     std::string ip = ParseResponse(domain);
 
     for (auto &dns_q : domain_to_dnsq_[domain]) {
-      dns_q->task_();
+      dns_q->task_(ip);
     }
     domain_to_dnsq_.erase(domain);
     domain_to_ip_.insert({domain, ip});
@@ -73,12 +73,14 @@ void AsyncDns::Loop() {
   }
 }
 
-void AsyncDns::AddDnsQuery(std::string &domain, std::function<void()> &&task) {
+void AsyncDns::AddDnsQuery(std::string &domain,
+                           std::function<void(std::string)> &&task) {
   queue_domain_->Push(std::unique_ptr<DnsMessage>(
       new DnsMessage(domain.size(), domain, std::move(task))));
 }
 
-void AsyncDns::AddDnsQuery(const char *domain, std::function<void()> &&task) {
+void AsyncDns::AddDnsQuery(const char *domain,
+                           std::function<void(std::string)> &&task) {
   queue_domain_->Push(std::unique_ptr<DnsMessage>(
       new DnsMessage(strlen(domain), domain, std::move(task))));
 }
