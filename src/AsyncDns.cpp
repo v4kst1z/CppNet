@@ -32,19 +32,15 @@ AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
       dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       looper_(looper),
       queue_domain_(new SafeQueue<DnsMessage>()),
-      dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
-}
+      dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {}
 
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper,
                    std::shared_ptr<Ipv4Addr> dns_server_addr)
     : quit_(false),
       dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       looper_(looper),
-      log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
-      dns_server_addr_(dns_server_addr) {
-  log_.Start();
-}
+      dns_server_addr_(dns_server_addr) {}
 
 void AsyncDns::StartLoop() { dns_thread_ = std::thread(&AsyncDns::Loop, this); }
 
@@ -57,10 +53,11 @@ void AsyncDns::Loop() {
   fd.SetReadCallback([this]() {
     std::string domain;
     std::string ip = ParseResponse(domain);
-    for (auto fd : domain_to_fd_[domain]) {
-      write(fd, ip.data(), ip.size());  //唤醒 fd
+
+    for (auto &dns_q : domain_to_dnsq_[domain]) {
+      dns_q->task_();
     }
-    domain_to_fd_.erase(domain);
+    domain_to_dnsq_.erase(domain);
     domain_to_ip_.insert({domain, ip});
   });
   looper_->AddEvent(std::make_shared<VariantEventBase>(fd));
@@ -68,20 +65,22 @@ void AsyncDns::Loop() {
   while (true) {
     if (quit_ && queue_domain_->Empty()) break;
     std::unique_ptr<DnsMessage> data = queue_domain_->WaitPop();
-    domain_to_fd_[data->domain_].push_back(data->fd_);
-    looper_->AddTask(std::bind(&AsyncDns::CreateDnsQuery, this, data->domain_,
-                               data->domain_len_));
+    std::string domain = data->domain_;
+    size_t domain_len = data->domain_len_;
+    domain_to_dnsq_[domain].push_back(std::move(data));
+    looper_->AddTask(
+        std::bind(&AsyncDns::CreateDnsQuery, this, domain, domain_len));
   }
 }
 
-void AsyncDns::AddDnsQuery(int fd, std::string &domain) {
-  queue_domain_->Push(
-      std::unique_ptr<DnsMessage>(new DnsMessage(fd, domain.size(), domain)));
+void AsyncDns::AddDnsQuery(std::string &domain, std::function<void()> &&task) {
+  queue_domain_->Push(std::unique_ptr<DnsMessage>(
+      new DnsMessage(domain.size(), domain, std::move(task))));
 }
 
-void AsyncDns::AddDnsQuery(int fd, const char *domain) {
-  queue_domain_->Push(
-      std::unique_ptr<DnsMessage>(new DnsMessage(fd, strlen(domain), domain)));
+void AsyncDns::AddDnsQuery(const char *domain, std::function<void()> &&task) {
+  queue_domain_->Push(std::unique_ptr<DnsMessage>(
+      new DnsMessage(strlen(domain), domain, std::move(task))));
 }
 
 std::string AsyncDns::GetIp(std::string domain) {
@@ -100,6 +99,9 @@ DnsHeader *AsyncDns::CreateHeader() {
   header->trans_id_ = ushort(generator);
   header->flags_ = htons(0x0100);
   header->qestions_num_ = htons(1);
+  header->answer_num_ = htons(0);
+  header->aut_num_ = htons(0);
+  header->add_num_ = htons(0);
   return header;
 }
 
@@ -141,7 +143,7 @@ void AsyncDns::CreateDnsQuery(std::string domain, int len) {
 
   delete header;
   delete ques;
-  delete dns_query;
+  free(dns_query);
   return;
 }
 

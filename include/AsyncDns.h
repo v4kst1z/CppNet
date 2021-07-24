@@ -51,12 +51,12 @@ typedef struct Dns {
 
 typedef struct DnsMessage {
  public:
-  DnsMessage(int fd, size_t len, std::string domain)
-      : fd_(fd), domain_len_(len), domain_(domain) {}
+  DnsMessage(size_t len, std::string domain, std::function<void()> &&task)
+      : domain_len_(len), domain_(domain), task_(task) {}
 
-  int fd_;
   size_t domain_len_;
   std::string domain_;
+  std::function<void()> task_;
 } DnsMessage;
 
 typedef struct DnsAnswer {
@@ -86,8 +86,8 @@ class AsyncDns {
   void StartLoop();
   void Loop();
 
-  void AddDnsQuery(int fd, std::string &domain);
-  void AddDnsQuery(int fd, const char *domain);
+  void AddDnsQuery(std::string &domain, std::function<void()> &&task);
+  void AddDnsQuery(const char *domain, std::function<void()> &&task);
 
   std::string GetIp(std::string);
 
@@ -108,6 +108,8 @@ class AsyncDns {
   Looper<UdpConnection> *looper_;
   std::unordered_map<std::string, std::string> domain_to_ip_;
   std::unordered_map<std::string, std::vector<int>> domain_to_fd_;
+  std::unordered_map<std::string, std::vector<std::unique_ptr<DnsMessage>>>
+      domain_to_dnsq_;
   std::thread dns_thread_;
   std::unique_ptr<SafeQueue<DnsMessage>> queue_domain_;
   std::shared_ptr<Ipv4Addr> dns_server_addr_;
