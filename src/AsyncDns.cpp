@@ -21,22 +21,18 @@ extern "C" {
 AsyncDns::AsyncDns()
     : quit_(false),
       dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
-      log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
       dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
   looper_ = new Looper<UdpConnection>(nullptr);
   looper_->SetLoopFlag(LOOPFLAG::UDPCLIENT);
-  log_.Start();
 }
 
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper)
     : quit_(false),
       dns_socket_(sockets::CreateNonblockAndCloexecUdpSocket()),
       looper_(looper),
-      log_(Logger::GetInstance()),
       queue_domain_(new SafeQueue<DnsMessage>()),
       dns_server_addr_(new Ipv4Addr("8.8.8.8", 53)) {
-  log_.Start();
 }
 
 AsyncDns::AsyncDns(Looper<UdpConnection> *looper,
