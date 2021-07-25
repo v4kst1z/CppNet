@@ -175,6 +175,7 @@ void TcpConnection::SendData(const void *data, size_t len, bool del) {
         break;
       } else {
         ERROR << "write error callback " << errno;
+        break;
       }
     }
   }
