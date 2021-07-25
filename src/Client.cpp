@@ -27,27 +27,22 @@ Client::Client(Looper<TcpConnection> *looper, std::shared_ptr<Ipv4Addr> addr,
 
 void Client::SetNewConnCallback(TcpConnection::CallBack &&cb) {
   new_conn_callback_ = std::move(cb);
-  looper_->SetNewConnCallback(new_conn_callback_);
 }
 
 void Client::SetMessageCallBack(TcpConnection::MessageCallBack &&cb) {
   message_callback_ = std::move(cb);
-  looper_->SetMessageCallBack(message_callback_);
 }
 
 void Client::SetCloseCallBack(TcpConnection::CallBack &&cb) {
   close_callback_ = std::move(cb);
-  looper_->SetCloseCallBack(close_callback_);
 }
 
 void Client::SetSendDataCallBack(TcpConnection::CallBack &&cb) {
   send_data_callback_ = std::move(cb);
-  looper_->SetSendDataCallBack(send_data_callback_);
 }
 
 void Client::SetErrorCallBack(TcpConnection::CallBack &&cb) {
   error_callback_ = std::move(cb);
-  looper_->SetErrorCallBack(error_callback_);
 }
 
 void Client::LoopStart() { looper_->Loop(); }
