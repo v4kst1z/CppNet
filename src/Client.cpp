@@ -105,7 +105,10 @@ void Client::SendData(const void *data, size_t len, bool del) {
   }
 
   if (!connect_) {
-    tasks_.push_back([&]() { conn_->SendData(buff, len, true); });
+    tasks_.push_back(std::bind(
+        static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
+            &TcpConnection::SendData),
+        conn_, buff, len, true));
   } else {
     looper_->AddTask(std::bind(
         static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
