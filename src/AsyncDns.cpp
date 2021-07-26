@@ -53,15 +53,13 @@ void AsyncDns::Loop() {
   fd.SetReadCallback([this]() {
     std::string domain;
     std::string ip = ParseResponse(domain);
-
-    for (auto &dns_q : domain_to_dnsq_[domain]) {
-      dns_q->task_(ip);
-    }
     {
       std::lock_guard<std::mutex> lck(dns_mtx_);
+      for (auto &dns_q : domain_to_dnsq_[domain]) {
+        dns_q->task_(ip);
+      }
       domain_to_dnsq_.erase(domain);
     }
-
     domain_to_ip_.insert({domain, ip});
   });
   looper_->AddEvent(std::make_shared<VariantEventBase>(fd));
@@ -71,12 +69,14 @@ void AsyncDns::Loop() {
     std::unique_ptr<DnsMessage> data = queue_domain_->WaitPop();
     std::string domain = data->domain_;
     size_t domain_len = data->domain_len_;
-    if (domain_to_dnsq_.find(domain) == domain_to_dnsq_.end()) {
-      looper_->AddTask(
-          std::bind(&AsyncDns::CreateDnsQuery, this, domain, domain_len));
+    {
+      std::lock_guard<std::mutex> lck(dns_mtx_);
+      if (domain_to_dnsq_.find(domain) == domain_to_dnsq_.end()) {
+        looper_->AddTask(
+            std::bind(&AsyncDns::CreateDnsQuery, this, domain, domain_len));
+      }
+      domain_to_dnsq_[domain].push_back(std::move(data));
     }
-    std::lock_guard<std::mutex> lck(dns_mtx_);
-    domain_to_dnsq_[domain].push_back(std::move(data));
   }
 }
 

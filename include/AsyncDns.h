@@ -76,6 +76,8 @@ class AsyncDns {
  public:
   using ConnMap =
       std::unordered_map<std::string, std::shared_ptr<UdpConnection>>;
+  using DomainDnsMap =
+      std::unordered_map<std::string, std::vector<std::unique_ptr<DnsMessage>>>;
 
   AsyncDns();
 
@@ -112,8 +114,8 @@ class AsyncDns {
   Looper<UdpConnection> *looper_;
   std::unordered_map<std::string, std::string> domain_to_ip_;
   std::unordered_map<std::string, std::vector<int>> domain_to_fd_;
-  std::unordered_map<std::string, std::vector<std::unique_ptr<DnsMessage>>>
-      domain_to_dnsq_;
+
+  DomainDnsMap domain_to_dnsq_;
   std::thread dns_thread_;
   std::unique_ptr<SafeQueue<DnsMessage>> queue_domain_;
   std::shared_ptr<Ipv4Addr> dns_server_addr_;
