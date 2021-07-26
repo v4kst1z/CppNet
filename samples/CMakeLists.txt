@@ -14,3 +14,5 @@ target_link_libraries(client cppnet)
 add_executable(udp_server udp_server.cpp)
 target_link_libraries(udp_server cppnet)
 
+add_executable(async_dns async_dns.cpp)
+target_link_libraries(async_dns cppnet)

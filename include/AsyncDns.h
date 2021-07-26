@@ -93,6 +93,8 @@ class AsyncDns {
 
   std::string GetIp(std::string);
 
+  ~AsyncDns();
+
   DISALLOW_COPY_AND_ASSIGN(AsyncDns);
 
  private:
@@ -115,6 +117,7 @@ class AsyncDns {
   std::thread dns_thread_;
   std::unique_ptr<SafeQueue<DnsMessage>> queue_domain_;
   std::shared_ptr<Ipv4Addr> dns_server_addr_;
+  std::mutex dns_mtx_;
 
   UdpConnection::CallBack new_conn_callback_;
   UdpConnection::MessageCallBack message_callback_;
