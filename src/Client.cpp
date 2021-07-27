@@ -77,7 +77,13 @@ void Client::Connect() {
             connect_ = true;
             looper_->AddTasks(tasks_);
             conn->RunNewConnCallBack();
-            conn->EnableWrite(false);
+            
+            auto event = looper_->GetEventPtr(conn_fd_);
+            event->Visit([](EventBase<Event> &conn_event) {
+              conn_event.EnableWriteEvents(false);
+            });
+
+            looper_->ModEvent(event);
           });
 
       conn_->GetEvent().EnableWriteEvents(true);
