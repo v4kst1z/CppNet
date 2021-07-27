@@ -81,7 +81,6 @@ void Client::Connect() {
           });
 
       conn_->GetEvent().EnableWriteEvents(true);
-      looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
     }
   } else if (ret == 0) {
     conn_->SetNewConnCallback(new_conn_callback_);
@@ -93,6 +92,7 @@ void Client::Connect() {
     connect_ = true;
     conn_->RunNewConnCallBack();
   }
+  looper_->AddEvent(std::make_shared<VariantEventBase>(conn_->GetEvent()));
 }
 
 void Client::SendData(const void *data, size_t len, bool del) {
