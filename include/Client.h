@@ -29,6 +29,8 @@ class Client {
   void SendData(const std::string &message);
   void SendData(IOBuffer *buffer);
 
+  int GetConnFd();
+
   void LoopStart();
 
   ~Client() = default;

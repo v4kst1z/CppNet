@@ -77,7 +77,7 @@ void Client::Connect() {
             connect_ = true;
             looper_->AddTasks(tasks_);
             conn->RunNewConnCallBack();
-            
+
             auto event = looper_->GetEventPtr(conn_fd_);
             event->Visit([](EventBase<Event> &conn_event) {
               conn_event.EnableWriteEvents(false);
@@ -156,3 +156,5 @@ void Client::SendData(IOBuffer *buffer) {
         conn_, buff, len, true));
   }
 }
+
+int Client::GetConnFd() { return conn_fd_; }
