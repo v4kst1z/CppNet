@@ -96,10 +96,8 @@ void TcpConnection::OnRead() {
         break;
       }
     } else {
-      if (sum_len == 0) {
-        OnClose();
-        return;
-      }
+      OnClose();
+      return;
     }
   }
 
