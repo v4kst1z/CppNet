@@ -221,6 +221,7 @@ void TcpConnection::SendData(IOBuffer *buffer) {
 
 void TcpConnection::EnableWrite(bool flag) {
   auto event = looper_->GetEventPtr(conn_fd_);
+  if (!event) return;
   event->Visit([flag](EventBase<Event> &conn_event) {
     conn_event.EnableWriteEvents(flag);
   });
