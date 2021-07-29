@@ -73,16 +73,13 @@ int TcpConnection::GetConnFd() { return conn_fd_; }
 
 void TcpConnection::OnRead() {
   char buf[BUFSIZ];
-  int sum_len = 0;
   while (true) {
     memset(buf, '\x00', BUFSIZ);
     int len = read(GetConnFd(), buf, BUFSIZ);
     if (len > 0) {
       input_buffer_.AppendData(buf, len);
-      sum_len += len;
     } else if (len < 0) {
       input_buffer_.AppendData(buf, strlen(buf));
-      sum_len += strlen(buf);
       if (errno == EAGAIN)  // 缓冲区为空
         break;
       else if (errno == EINTR)  //中断信号
