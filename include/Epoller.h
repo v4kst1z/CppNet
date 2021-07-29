@@ -1,3 +1,10 @@
+/*
+ * @Author: V4kst1z (dcydane@gmail.com)
+ * @Date: 2021-07-27 10:10:47
+ * @LastEditors: V4kst1z
+ * @Description:
+ * @FilePath: /CppNet/include/Epoller.h
+ */
 //
 // Created by v4kst1z
 //
@@ -37,6 +44,7 @@ class Epoller {
   int epfd_;
   int time_out_;
   int events_num_;
+  std::mutex mp_mtx_;
 };
 
 #endif  // CPPNET_NET_EPOLLER_H

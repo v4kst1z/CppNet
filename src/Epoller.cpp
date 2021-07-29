@@ -30,7 +30,10 @@ void Epoller::AddEvent(std::shared_ptr<VariantEventBase> event_base) {
   DEBUG << "fd is " << tep.data.fd << " events is " << tep.events;
   if (epoll_ctl(epfd_, EPOLL_CTL_ADD, tep.data.fd, &tep) < 0)
     ERROR << "error epoll_ctl add";
-  fd_to_events_.insert({tep.data.fd, event_base});
+  {
+    std::lock_guard<std::mutex> lck(mp_mtx_);
+    fd_to_events_.insert({tep.data.fd, event_base});
+  }
 }
 
 void Epoller::ModEvent(std::shared_ptr<VariantEventBase> event_base) {
@@ -64,7 +67,10 @@ void Epoller::DelEvent(std::shared_ptr<VariantEventBase> event_base) {
   DEBUG << "fd is " << tep.data.fd << " events is " << tep.events;
   if (epoll_ctl(epfd_, EPOLL_CTL_DEL, tep.data.fd, &tep) < 0)
     ERROR << "error epoll_ctl";
-  fd_to_events_.erase(tep.data.fd);
+  {
+    std::lock_guard<std::mutex> lck(mp_mtx_);
+    fd_to_events_.erase(tep.data.fd);
+  }
 }
 
 std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
@@ -74,7 +80,12 @@ std::vector<std::shared_ptr<VariantEventBase>> Epoller::PollWait() {
   if (count) DEBUG << "epoll_wait count is " << count;
   for (int id = 0; id < count; id++) {
     DEBUG << (events_ + id)->data.fd << " " << count;
-    auto eventbase = fd_to_events_[(events_ + id)->data.fd];
+    std::shared_ptr<VariantEventBase> eventbase;
+    {
+      std::lock_guard<std::mutex> lck(mp_mtx_);
+      eventbase = fd_to_events_[(events_ + id)->data.fd];
+      if (!eventbase) continue;
+    }
     eventbase->Visit(
         [&](EventBase<Event> &e) { e.SetRevents((events_ + id)->events); },
         [&](EventBase<TimeEvent> &e) { e.SetRevents((events_ + id)->events); });
@@ -89,5 +100,10 @@ Epoller::~Epoller() {
 }
 
 std::shared_ptr<VariantEventBase> Epoller::GetEventPtr(int fd) {
-  return fd_to_events_[fd];
+  std::shared_ptr<VariantEventBase> eventbase;
+  {
+    std::lock_guard<std::mutex> lck(mp_mtx_);
+    eventbase = fd_to_events_[fd];
+  }
+  return eventbase;
 }
