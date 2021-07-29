@@ -45,6 +45,7 @@ class Client {
   int conn_fd_;
   std::shared_ptr<TcpConnection> conn_;
   std::vector<std::function<void()>> tasks_;
+  std::mutex tasks_mtx_;
 
   TcpConnection::CallBack new_conn_callback_;
   TcpConnection::MessageCallBack message_callback_;

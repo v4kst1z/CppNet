@@ -111,6 +111,7 @@ void Client::SendData(const void *data, size_t len, bool del) {
   }
 
   if (!connect_) {
+    std::lock_guard<std::mutex> lck(tasks_mtx_);
     tasks_.push_back(std::bind(
         static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
             &TcpConnection::SendData),
@@ -128,6 +129,7 @@ void Client::SendData(const std::string &message) {
   char *buff = (char *)malloc(len);
   memcpy(buff, const_cast<char *>(message.data()), len);
   if (!connect_) {
+    std::lock_guard<std::mutex> lck(tasks_mtx_);
     tasks_.push_back(std::bind(
         static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
             &TcpConnection::SendData),
@@ -145,6 +147,7 @@ void Client::SendData(IOBuffer *buffer) {
   char *buff = (char *)malloc(len);
   memcpy(buff, buffer->GetReadAblePtr(), len);
   if (!connect_) {
+    std::lock_guard<std::mutex> lck(tasks_mtx_);
     tasks_.push_back(std::bind(
         static_cast<void (TcpConnection::*)(const void *, size_t, bool)>(
             &TcpConnection::SendData),
