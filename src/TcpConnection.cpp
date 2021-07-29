@@ -95,12 +95,14 @@ void TcpConnection::OnRead() {
         ERROR << "read error callback " << errno;
         break;
       }
+    } else {
+      if (sum_len == 0) {
+        OnClose();
+        return;
+      }
     }
   }
-  if (sum_len == 0) {
-    OnClose();
-    return;
-  }
+
   RunMessageCallBack();
 }
 
