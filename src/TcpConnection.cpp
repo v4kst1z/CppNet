@@ -106,10 +106,7 @@ void TcpConnection::OnWrite() {
 }
 
 void TcpConnection::OnClose() {
-  if (input_buffer_.GetReadAbleSize() || output_buffer.GetReadAbleSize()) {
-    if (input_buffer_.GetReadAbleSize())
-      message_callback_(shared_from_this(), input_buffer_);
-
+  if (output_buffer.GetReadAbleSize()) {
     while (output_buffer.GetReadAbleSize()) SendData(&output_buffer);
   }
   RunCloseCallBack();
