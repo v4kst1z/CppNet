@@ -75,7 +75,12 @@ void Client::Connect() {
             conn->SetMessageCallBack(message_callback_);
 
             connect_ = true;
-            looper_->AddTasks(tasks_);
+
+            {
+              std::lock_guard<std::mutex> lck(tasks_mtx_);
+              looper_->AddTasks(tasks_);
+            }
+            
             conn->RunNewConnCallBack();
 
             auto event = looper_->GetEventPtr(conn_fd_);
