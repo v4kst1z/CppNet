@@ -1,10 +1,3 @@
-/*
- * @Author: V4kst1z (dcydane@gmail.com)
- * @Date: 2021-07-27 10:10:47
- * @LastEditors: V4kst1z
- * @Description:
- * @FilePath: /CppNet/include/Epoller.h
- */
 //
 // Created by v4kst1z
 //
@@ -13,6 +6,7 @@
 #define CPPNET_NET_EPOLLER_H
 
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
